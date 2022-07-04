@@ -2209,7 +2209,7 @@ dynamictile(Monitor *m)
 void
 dynamictilereverse(Monitor *m)
 {
-	unsigned int i, n = 0, h, mw, ty;
+	unsigned int i, n = 0, h, mw, my,  ty;
 	Client *c;
 
 	wl_list_for_each(c, &clients, link)
@@ -2222,14 +2222,15 @@ dynamictilereverse(Monitor *m)
 		mw = m->nmaster ? m->w.width * m->mfact : 0;
 	else
 		mw = m->w.width;
-	ty = 0;
+	my = ty = 0;
     i = 1;
 	wl_list_for_each(c, &clients, link) {
 		if (!VISIBLEON(c, m) || c->isfloating || c->isfullscreen)
 			continue;
 		if (i > (n - m->nmaster)) {
-			h = m->w.height;
+			h = (m->w.height - my) / (MIN(1, (n-i)));
 			resize(c, m->w.x, m->w.y, mw, h, 0);
+            my += c->geom.height;
 		} else {
 			h = (m->w.height - ty) / (n - i);
 			resize(c, m->w.x + mw, m->w.y + ty, m->w.width - mw, h, 0);

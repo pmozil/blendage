@@ -20,10 +20,10 @@ static Rule rules[1];// = {
 /* layout(s) */
 static Layout layouts[] = {
 	/* symbol     arrange function */
-	{ "[]_",      dynamictilereverse },
 	{ "[]=",      dynamictile },
 	{ "><>",      NULL },    /* no layout function means floating behavior */
 	{ "[M]",      monocle },
+	{ "[]_",      dynamictilereverse },
 };
 
 /* monitors */
@@ -33,7 +33,7 @@ static MonitorRule monrules[] = {
 	{ "eDP-1",    0.5,  1,      2,    &layouts[0], WL_OUTPUT_TRANSFORM_NORMAL },
 	*/
 	/* defaults */
-	{ NULL,       0.55, 1,      1,    &layouts[0], WL_OUTPUT_TRANSFORM_NORMAL },
+	{ NULL,       0.5, 1,      1,    &layouts[3], WL_OUTPUT_TRANSFORM_NORMAL },
 };
 
 /* keyboard */
