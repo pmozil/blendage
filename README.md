@@ -1,3 +1,8 @@
+# This is a fork of dwl with some added functions
+Right now there's:
+- inverse dynamic tiling
+- dynamic config with lua in development
+
 # dwl - dwm for Wayland
 
 Join us on our [Discord server](https://discord.gg/jJxZnrGPWN)!
