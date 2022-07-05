@@ -252,7 +252,7 @@ static void monocle(Monitor *m);
 static void motionabsolute(struct wl_listener *listener, void *data);
 static void motionnotify(uint32_t time);
 static void motionrelative(struct wl_listener *listener, void *data);
-static void moveresize(const Arg *arg);
+static void moveclient(const Arg *arg);
 static void outputmgrapply(struct wl_listener *listener, void *data);
 static void outputmgrapplyortest(struct wlr_output_configuration_v1 *config, int test);
 static void outputmgrtest(struct wl_listener *listener, void *data);
@@ -264,6 +264,7 @@ static void quitsignal(int signo);
 static void rendermon(struct wl_listener *listener, void *data);
 static void requeststartdrag(struct wl_listener *listener, void *data);
 static void resize(Client *c, int x, int y, int w, int h, int interact);
+static void resizeclient(const Arg *arg);
 static void run(char *startup_cmd);
 static Client *selclient(void);
 static void setcursor(struct wl_listener *listener, void *data);
@@ -1517,7 +1518,7 @@ motionrelative(struct wl_listener *listener, void *data)
 }
 
 void
-moveresize(const Arg *arg)
+moveclient(const Arg *arg)
 {
 	if (cursor_mode != CurNormal)
 		return;
@@ -1526,24 +1527,11 @@ moveresize(const Arg *arg)
 		return;
 
 	/* Float the window and tell motionnotify to grab it */
-	//setfloating(grabc, 1);
-    if (grabc->isfloating){
-	    switch (cursor_mode = arg->ui) {
-	    case CurMove:
-	    	grabcx = cursor->x - grabc->geom.x;
-	    	grabcy = cursor->y - grabc->geom.y;
-	    	wlr_xcursor_manager_set_cursor_image(cursor_mgr, "fleur", cursor);
-	    	break;
-	    case CurResize:
-	    	/* Doesn't work for X11 output - the next absolute motion event
-	    	 * returns the cursor to where it started */
-	    	wlr_cursor_warp_closest(cursor, NULL,
-	    			grabc->geom.x + grabc->geom.width,
-	    			grabc->geom.y + grabc->geom.height);
-	    	wlr_xcursor_manager_set_cursor_image(cursor_mgr,
-	    			"bottom_right_corner", cursor);
-	    	break;
-	    }
+    if(grabc->isfloating){
+	    setfloating(grabc, 1);
+    	grabcx = cursor->x - grabc->geom.x;
+    	grabcy = cursor->y - grabc->geom.y;
+    	wlr_xcursor_manager_set_cursor_image(cursor_mgr, "fleur", cursor);
     }
 }
 
@@ -1754,6 +1742,25 @@ resize(Client *c, int x, int y, int w, int h, int interact)
 	/* wlroots makes this a no-op if size hasn't changed */
 	c->resize = client_set_size(c, c->geom.width - 2 * c->bw,
 			c->geom.height - 2 * c->bw);
+}
+
+void
+resizeclient(const Arg *arg)
+{
+	if (cursor_mode != CurNormal)
+		return;
+	xytonode(cursor->x, cursor->y, NULL, &grabc, NULL, NULL, NULL);
+	if (!grabc || client_is_unmanaged(grabc))
+		return;
+
+    if(grabc->isfloating) {
+	    setfloating(grabc, 1);
+	    wlr_cursor_warp_closest(cursor, NULL,
+	    		grabc->geom.x + grabc->geom.width,
+	    		grabc->geom.y + grabc->geom.height);
+	    wlr_xcursor_manager_set_cursor_image(cursor_mgr,
+	    		"bottom_right_corner", cursor);
+    }
 }
 
 void
@@ -2199,7 +2206,7 @@ dynamictile(Monitor *m)
 			my += c->geom.height;
 		} else {
 			h = (m->w.height - ty) / (n - i);
-			resize(c, m->w.x + mw, m->w.y + ty, m->w.width - mw, h - c->gap, 0);
+			resize(c, m->w.x + mw, m->w.y + ty, m->w.width - mw, h, 0);
 			ty += c->geom.height;
 		}
 		i++;
@@ -2222,18 +2229,17 @@ dynamictilereverse(Monitor *m)
 		mw = m->nmaster ? m->w.width * m->mfact : 0;
 	else
 		mw = m->w.width;
-	my = ty = 0;
-    i = 1;
+	i = my = ty = 0;
 	wl_list_for_each(c, &clients, link) {
 		if (!VISIBLEON(c, m) || c->isfloating || c->isfullscreen)
 			continue;
-		if (i > (n - m->nmaster)) {
-			h = (m->w.height - my) / (MIN(1, (n-i)));
-			resize(c, m->w.x, m->w.y, mw, h, 0);
-            my += c->geom.height;
+		if ((i > (n - m->nmaster)) + !i) {
+			h = (m->w.height - my) / MAX(MIN((n - i), m->nmaster), 1);
+			resize(c, m->w.x, m->w.y + my, mw, h, 0);
+			my += c->geom.height;
 		} else {
-			h = (m->w.height - ty) / (n - i);
-			resize(c, m->w.x + mw, m->w.y + ty, m->w.width - mw, h, 0);
+			h = (m->w.height - ty) / (n + 1 - m->nmaster - i);
+			resize(c, m->w.x + mw, m->w.y + m->w.height - ty - h, m->w.width - mw, h, 0);
 			ty += c->geom.height;
 		}
 		i++;
