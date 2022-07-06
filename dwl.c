@@ -1721,6 +1721,10 @@ requeststartdrag(struct wl_listener *listener, void *data)
 void
 resize(Client *c, int x, int y, int w, int h, int interact)
 {
+    if(c->isfloating) {
+        setfloating(c, 1);
+        return;
+    }
 	struct wlr_box *bbox = interact ? &sgeom : &c->mon->w;
 	c->geom.x = x + c->gap;
 	c->geom.y = y + c->gap;
@@ -2229,12 +2233,13 @@ dynamictilereverse(Monitor *m)
 		mw = m->nmaster ? m->w.width * m->mfact : 0;
 	else
 		mw = m->w.width;
-	i = my = ty = 0;
+	my = ty = 0;
+    i = 1;
 	wl_list_for_each(c, &clients, link) {
 		if (!VISIBLEON(c, m) || c->isfloating || c->isfullscreen)
 			continue;
-		if ((i > (n - m->nmaster)) + !i) {
-			h = (m->w.height - my) / MAX(MIN((n - i), m->nmaster), 1);
+		if (i > (n - m->nmaster)) {
+			h = (m->w.height - my) / MAX(MIN((n - i + 1), m->nmaster), 1);
 			resize(c, m->w.x, m->w.y + my, mw, h, 0);
 			my += c->geom.height;
 		} else {
