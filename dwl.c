@@ -297,6 +297,7 @@ static void virtualkeyboard(struct wl_listener *listener, void *data);
 static Monitor *xytomon(double x, double y);
 static struct wlr_scene_node *xytonode(double x, double y, struct wlr_surface **psurface,
 		Client **pc, LayerSurface **pl, double *nx, double *ny);
+static void neighbours(double x, double y, Client **clist);
 static void zoom(const Arg *arg);
 
 /* variables */
@@ -1704,6 +1705,11 @@ static void resizeclient(const Arg *arg)
 	if (!grabc || client_is_unmanaged(grabc))
 		return;
 
+    Client **ns;
+    ns = calloc(4, sizeof(Client *));
+    neighbours(cursor->x, cursor->y, ns);
+    free(ns);
+
     if(grabc->isfloating) {
 	    setfloating(grabc, 1);
 	    wlr_cursor_warp_closest(cursor, NULL,
@@ -2370,6 +2376,33 @@ xytonode(double x, double y, struct wlr_surface **psurface,
 	if (pc) *pc = c;
 	if (pl) *pl = l;
 	return node;
+}
+
+void neighbours(double curx, double cury, Client **clist){
+    Client *cur, *c;
+    int x, y, h, w, index;
+
+    wl_list_for_each(c, &clients, link) {
+        if(c->geom.x<=curx && c->geom.y<+cury && (c->geom.x + c->geom.width)>=curx && (c->geom.y + c->geom.height)>=cury)
+            cur = c;
+    }
+    if(!cur)
+        return;
+
+    wl_list_for_each(c, &clients, link) {
+        x = c->geom.x;
+        y = c->geom.y;
+        h = c->geom.height;
+        w = c->geom.width;
+        /* This here works because only one expression in the sum can be true, so index<=4 */
+        index = ( (y+h) == cur->geom.y ) /* top neighbour */
+            +   2 *( (x+w) == cur->geom.x ) /* left neighbour */
+            +   3 *( (cur->geom.y + cur->geom.height) == y ) /* bottom neighbour */
+            +   4 *( (cur->geom.x + cur->geom.width) == x); /* right neighbour */
+        printf("%i\n", index);
+        if(index)
+            clist[--index] = c;
+    }
 }
 
 static void zoom(const Arg *arg)
