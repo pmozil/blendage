@@ -1705,10 +1705,11 @@ static void resizeclient(const Arg *arg)
 	if (!grabc || client_is_unmanaged(grabc))
 		return;
 
-    Client **ns;
-    ns = calloc(4, sizeof(Client *));
-    neighbours(cursor->x, cursor->y, ns);
-    free(ns);
+    // Client **ns;
+    // ns = calloc(4, sizeof(Client *));
+    // neighbours(cursor->x, cursor->y, ns);
+    // client_send_close(ns[1]);
+    // free(ns);
 
     if(grabc->isfloating) {
 	    setfloating(grabc, 1);
@@ -1718,6 +1719,7 @@ static void resizeclient(const Arg *arg)
 	    wlr_xcursor_manager_set_cursor_image(cursor_mgr,
 	    		"bottom_right_corner", cursor);
     }
+
 }
 
 static void run(char *startup_cmd)
@@ -2144,11 +2146,11 @@ static void dynamictile(Monitor *m)
 		if (i < m->nmaster) {
 			h = (m->w.height - my) / (MIN(n, m->nmaster) - i);
 			resize(c, m->w.x, m->w.y + my, mw, h, 0);
-			my += c->geom.height;
+			my += c->geom.height + c->gap;
 		} else {
 			h = (m->w.height - ty) / (n - i);
 			resize(c, m->w.x + mw, m->w.y + ty, m->w.width - mw, h, 0);
-			ty += c->geom.height;
+			ty += c->geom.height + c->gap;
 		}
 		i++;
 	}
@@ -2177,11 +2179,11 @@ static void dynamictilereverse(Monitor *m)
 		if (i > (n - m->nmaster)) {
 			h = (m->w.height - my) / MAX(MIN((n - i + 1), m->nmaster), 1);
 			resize(c, m->w.x, m->w.y + my, mw, h, 0);
-			my += c->geom.height;
+			my += c->geom.height + c->gap;
 		} else {
 			h = (m->w.height - ty) / (n + 1 - m->nmaster - i);
 			resize(c, m->w.x + mw, m->w.y + m->w.height - ty - h, m->w.width - mw, h, 0);
-			ty += c->geom.height;
+			ty += c->geom.height + c->gap;
 		}
 		i++;
 	}
@@ -2379,13 +2381,13 @@ xytonode(double x, double y, struct wlr_surface **psurface,
 }
 
 void neighbours(double curx, double cury, Client **clist){
-    Client *cur, *c;
+    Client *cur = selclient(), *c;
     int x, y, h, w, index;
 
-    wl_list_for_each(c, &clients, link) {
-        if(c->geom.x<=curx && c->geom.y<+cury && (c->geom.x + c->geom.width)>=curx && (c->geom.y + c->geom.height)>=cury)
-            cur = c;
-    }
+    // wl_list_for_each(c, &clients, link) {
+    //     if(c->geom.x<=curx && c->geom.y<+cury && (c->geom.x + c->geom.width)>=curx && (c->geom.y + c->geom.height)>=cury)
+    //         cur = c;
+    // }
     if(!cur)
         return;
 
@@ -2395,11 +2397,10 @@ void neighbours(double curx, double cury, Client **clist){
         h = c->geom.height;
         w = c->geom.width;
         /* This here works because only one expression in the sum can be true, so index<=4 */
-        index = ( (y+h) == cur->geom.y ) /* top neighbour */
-            +   2 *( (x+w) == cur->geom.x ) /* left neighbour */
-            +   3 *( (cur->geom.y + cur->geom.height) == y ) /* bottom neighbour */
-            +   4 *( (cur->geom.x + cur->geom.width) == x); /* right neighbour */
-        printf("%i\n", index);
+        index = ( (y + h + c->gap) == (cur->geom.y - cur->gap) ) /* top neighbour */
+            +   2 * ( (x + w + c->gap) == (cur->geom.x - cur->gap) ) /* left neighbour */
+            +   3 * ( (cur->geom.y + cur->geom.height + cur->gap) == (y - c->gap) ) /* bottom neighbour */
+            +   4 * ( (cur->geom.x + cur->geom.width  + cur->gap) == (x - c->gap) ); /* right neighbour */
         if(index)
             clist[--index] = c;
     }
