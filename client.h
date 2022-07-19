@@ -172,7 +172,7 @@ client_send_close(Client *c)
 #ifdef XWAYLAND
 	if (client_is_x11(c)) {
 		wlr_xwayland_surface_close(c->surface.xwayland);
-		return;
+        return;
 	}
 #endif
 	wlr_xdg_toplevel_send_close(c->surface.xdg);
@@ -242,7 +242,7 @@ client_from_wlr_surface(struct wlr_surface *s)
 
 #ifdef XWAYLAND
 	struct wlr_xwayland_surface *xsurface;
-	if (s->role_data && wlr_surface_is_xwayland_surface(s)
+	if (wlr_surface_is_xwayland_surface(s)
 			&& (xsurface = wlr_xwayland_surface_from_wlr_surface(s)))
 		return xsurface->data;
 #endif

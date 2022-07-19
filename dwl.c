@@ -279,6 +279,7 @@ static void setup(void);
 static void sigchld(int unused);
 static void spawn(const Arg *arg);
 static void startdrag(struct wl_listener *listener, void *data);
+static void swapclient(Client *a, Client *b);
 static void tag(const Arg *arg);
 static void tagmon(const Arg *arg);
 static void dynamictile(Monitor *m);
@@ -496,7 +497,8 @@ static void arrange(Monitor *m)
 
 	if (m->lt[m->sellt]->arrange)
 		m->lt[m->sellt]->arrange(m);
-	/* TODO recheck pointer focus here... or in resize()? */
+
+    motionnotify(0);
 }
 
 static void arrangelayer(Monitor *m, struct wl_list *list, struct wlr_box *usable_area, int exclusive)
@@ -1481,17 +1483,29 @@ static void moveclient(const Arg *arg)
 {
 	if (cursor_mode != CurNormal)
 		return;
+
 	xytonode(cursor->x, cursor->y, NULL, &grabc, NULL, NULL, NULL);
 	if (!grabc || client_is_unmanaged(grabc))
 		return;
 
+
 	/* Float the window and tell motionnotify to grab it */
     if(grabc->isfloating){
-	    setfloating(grabc, 1);
     	grabcx = cursor->x - grabc->geom.x;
     	grabcy = cursor->y - grabc->geom.y;
     	wlr_xcursor_manager_set_cursor_image(cursor_mgr, "fleur", cursor);
+        motionnotify(0);
+        return;
     }
+
+
+
+    // Client **ns;
+    // ns = calloc(4, sizeof(Client *));
+    // neighbours(cursor->x, cursor->y, ns);
+    // free(ns);
+
+    motionnotify(0);
 }
 
 static void outputmgrapply(struct wl_listener *listener, void *data)
@@ -1675,10 +1689,12 @@ static void resize(Client *c, int x, int y, int w, int h, int interact)
         return;
     }
 	struct wlr_box *bbox = interact ? &sgeom : &c->mon->w;
+
 	c->geom.x = x + c->gap;
 	c->geom.y = y + c->gap;
 	c->geom.width = w - 2 * c->gap;
 	c->geom.height = h - 2 * c->gap;
+
 	applybounds(c, bbox);
 
 	/* Update scene-graph, including borders */
@@ -1705,14 +1721,7 @@ static void resizeclient(const Arg *arg)
 	if (!grabc || client_is_unmanaged(grabc))
 		return;
 
-    // Client **ns;
-    // ns = calloc(4, sizeof(Client *));
-    // neighbours(cursor->x, cursor->y, ns);
-    // client_send_close(ns[1]);
-    // free(ns);
-
     if(grabc->isfloating) {
-	    setfloating(grabc, 1);
 	    wlr_cursor_warp_closest(cursor, NULL,
 	    		grabc->geom.x + grabc->geom.width,
 	    		grabc->geom.y + grabc->geom.height);
@@ -1720,6 +1729,7 @@ static void resizeclient(const Arg *arg)
 	    		"bottom_right_corner", cursor);
     }
 
+    motionnotify(0);
 }
 
 static void run(char *startup_cmd)
@@ -2105,6 +2115,44 @@ static void startdrag(struct wl_listener *listener, void *data)
 	wl_signal_add(&drag->icon->events.destroy, &drag_icon_destroy);
 }
 
+static void swapclient(Client *a, Client *b) {
+
+	if (!a || !selmon->lt[selmon->sellt]->arrange || a->isfloating || !b || b->isfloating || a==b)
+		return;
+
+    struct wl_list *apos = (&a->link==&clients) ? &clients : a->link.prev,
+                   *bpos = (&b->link==&clients) ? &clients : b->link.prev;
+
+    if(apos==&b->link) {
+        wl_list_remove(&a->link);
+        wl_list_insert(bpos, &a->link);
+    }
+
+    if(bpos==&a->link) {
+        wl_list_remove(&b->link);
+        wl_list_insert(apos, &b->link);
+    }
+
+    if(apos!=&b->link && bpos!=&a->link) {
+        wl_list_remove(&a->link);
+        wl_list_remove(&b->link);
+        wl_list_insert(bpos, &a->link);
+        wl_list_insert(apos, &b->link);
+    }
+
+    if(b->mon!=a->mon) {
+        Monitor *tmp = a->mon;
+        setmon(a, b->mon, 0);
+        setmon(b, tmp, 0);
+        arrange(b->mon);
+        arrange(a->mon);
+        return;
+    }
+
+    focusclient(b, 0);
+    arrange(a->mon);
+}
+
 static void tag(const Arg *arg)
 {
 	Client *sel = selclient();
@@ -2171,6 +2219,7 @@ static void dynamictilereverse(Monitor *m)
 		mw = m->nmaster ? m->w.width * m->mfact : 0;
 	else
 		mw = m->w.width;
+
 	my = ty = 0;
     i = 1;
 	wl_list_for_each(c, &clients, link) {
@@ -2382,27 +2431,28 @@ xytonode(double x, double y, struct wlr_surface **psurface,
 
 void neighbours(double curx, double cury, Client **clist){
     Client *cur = selclient(), *c;
-    int x, y, h, w, index;
+    int cx, cy, curh, curw, x, y, h, w, index;
 
-    // wl_list_for_each(c, &clients, link) {
-    //     if(c->geom.x<=curx && c->geom.y<+cury && (c->geom.x + c->geom.width)>=curx && (c->geom.y + c->geom.height)>=cury)
-    //         cur = c;
-    // }
+    cx = cur->geom.x - cur->gap;
+    cy = cur->geom.y - cur->gap;
+    curw = cur->geom.width + 2*cur->gap;
+    curh = cur->geom.height + 2*cur->gap;
     if(!cur)
         return;
 
     wl_list_for_each(c, &clients, link) {
-        x = c->geom.x;
-        y = c->geom.y;
-        h = c->geom.height;
-        w = c->geom.width;
+        x = c->geom.x - c->gap;
+        y = c->geom.y - c->gap;
+        h = c->geom.height + 2*c->gap;
+        w = c->geom.width + 2*c->gap;
         /* This here works because only one expression in the sum can be true, so index<=4 */
-        index = ( (y + h + c->gap) == (cur->geom.y - cur->gap) ) /* top neighbour */
-            +   2 * ( (x + w + c->gap) == (cur->geom.x - cur->gap) ) /* left neighbour */
-            +   3 * ( (cur->geom.y + cur->geom.height + cur->gap) == (y - c->gap) ) /* bottom neighbour */
-            +   4 * ( (cur->geom.x + cur->geom.width  + cur->gap) == (x - c->gap) ); /* right neighbour */
-        if(index)
-            clist[--index] = c;
+        index = ( (y + h) == cy) /* top neighbour */
+            +   2 * ( (x + w) == cx ) /* left neighbour */
+            +   3 * ( (cy + curh) == y ) /* bottom neighbour */
+            +   4 * ( (cx + curw) == x );  /* right neighbour */
+
+        if(index > 0)
+             clist[--index] = c;
     }
 }
 
