@@ -1447,7 +1447,15 @@ static void motionnotify(uint32_t time)
         if(grabc->isfloating) {
             resize(grabc, cursor->x - grabcx, cursor->y - grabcy,
                     grabc->geom.width, grabc->geom.height, 1);
+            return;
         }
+
+        Client *c;
+        xytonode(cursor->x, cursor->y, NULL, &c, NULL, NULL, NULL);
+        if(grabc && c && !c->isfloating) {
+            swapclient(c, grabc);
+        }
+
 		return;
 	} else if (cursor_mode == CurResize) {
         if(grabc->isfloating) {
@@ -2154,7 +2162,7 @@ static void swapclient(Client *a, Client *b) {
         return;
     }
 
-    focusclient(b, 0);
+    focusclient(b, 1);
     arrange(a->mon);
 }
 
@@ -2468,28 +2476,13 @@ static void zoom(const Arg *arg)
 	if (!sel || !selmon->lt[selmon->sellt]->arrange || sel->isfloating)
 		return;
 
-	/* Search for the first tiled window that is not sel, marking sel as
-	 * NULL if we pass it along the way */
+
 	wl_list_for_each(c, &clients, link)
-		if (VISIBLEON(c, selmon) && !c->isfloating) {
-			if (c != sel)
-				break;
-			sel = NULL;
+		if (!c->isfloating && c!=sel) {
+            break;
 		}
 
-	/* Return if no other tiled window was found */
-	if (&c->link == &clients)
-		return;
-
-	/* If we passed sel, move c to the front; otherwise, move sel to the
-	 * front */
-	if (!sel)
-		sel = c;
-	wl_list_remove(&sel->link);
-	wl_list_insert(&clients, &sel->link);
-
-	focusclient(sel, 1);
-	arrange(selmon);
+    swapclient(sel, c);
 }
 
 #ifdef XWAYLAND
