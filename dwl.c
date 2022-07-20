@@ -1440,16 +1440,21 @@ static void motionnotify(uint32_t time)
 	if (seat->drag && (icon = seat->drag->icon))
 		wlr_scene_node_set_position(icon->data, cursor->x + icon->surface->sx,
 				cursor->y + icon->surface->sy);
+
 	/* If we are currently grabbing the mouse, handle and return */
 	if (cursor_mode == CurMove) {
 		/* Move the grabbed client to the new position. */
-		resize(grabc, cursor->x - grabcx, cursor->y - grabcy,
-				grabc->geom.width, grabc->geom.height, 1);
+        if(grabc->isfloating) {
+            resize(grabc, cursor->x - grabcx, cursor->y - grabcy,
+                    grabc->geom.width, grabc->geom.height, 1);
+        }
 		return;
 	} else if (cursor_mode == CurResize) {
-		resize(grabc, grabc->geom.x, grabc->geom.y,
-				cursor->x - grabc->geom.x,
-				cursor->y - grabc->geom.y, 1);
+        if(grabc->isfloating) {
+            resize(grabc, grabc->geom.x, grabc->geom.y,
+                    cursor->x - grabc->geom.x,
+                    cursor->y - grabc->geom.y, 1);
+        }
 		return;
 	}
 
@@ -1485,27 +1490,23 @@ static void moveclient(const Arg *arg)
 		return;
 
 	xytonode(cursor->x, cursor->y, NULL, &grabc, NULL, NULL, NULL);
+
 	if (!grabc || client_is_unmanaged(grabc))
 		return;
-
+    
+    cursor_mode = arg->ui;
 
 	/* Float the window and tell motionnotify to grab it */
     if(grabc->isfloating){
     	grabcx = cursor->x - grabc->geom.x;
     	grabcy = cursor->y - grabc->geom.y;
-    	wlr_xcursor_manager_set_cursor_image(cursor_mgr, "fleur", cursor);
-        motionnotify(0);
         return;
     }
-
-
 
     // Client **ns;
     // ns = calloc(4, sizeof(Client *));
     // neighbours(cursor->x, cursor->y, ns);
     // free(ns);
-
-    motionnotify(0);
 }
 
 static void outputmgrapply(struct wl_listener *listener, void *data)
@@ -1684,16 +1685,19 @@ static void requeststartdrag(struct wl_listener *listener, void *data)
 
 static void resize(Client *c, int x, int y, int w, int h, int interact)
 {
-    if(c->isfloating) {
-        setfloating(c, 1);
-        return;
-    }
 	struct wlr_box *bbox = interact ? &sgeom : &c->mon->w;
 
-	c->geom.x = x + c->gap;
-	c->geom.y = y + c->gap;
-	c->geom.width = w - 2 * c->gap;
-	c->geom.height = h - 2 * c->gap;
+    c->geom.x = x;
+    c->geom.y = y;
+    c->geom.width = w ;
+    c->geom.height = h;
+
+    if(!c->isfloating){ 
+	    c->geom.x += c->gap;
+	    c->geom.y += c->gap;
+	    c->geom.width -= 2 * c->gap;
+	    c->geom.height -= 2 * c->gap;
+    }
 
 	applybounds(c, bbox);
 
@@ -1717,19 +1721,20 @@ static void resizeclient(const Arg *arg)
 {
 	if (cursor_mode != CurNormal)
 		return;
+
 	xytonode(cursor->x, cursor->y, NULL, &grabc, NULL, NULL, NULL);
+
 	if (!grabc || client_is_unmanaged(grabc))
 		return;
+
+    cursor_mode = arg->ui;
 
     if(grabc->isfloating) {
 	    wlr_cursor_warp_closest(cursor, NULL,
 	    		grabc->geom.x + grabc->geom.width,
 	    		grabc->geom.y + grabc->geom.height);
-	    wlr_xcursor_manager_set_cursor_image(cursor_mgr,
-	    		"bottom_right_corner", cursor);
+        return;
     }
-
-    motionnotify(0);
 }
 
 static void run(char *startup_cmd)
