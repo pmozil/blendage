@@ -15,6 +15,15 @@ void tohex(char *inp, float *f) {
     }
 }
 
+static void setint(long addr, int val) {
+    *(int *)addr = val;
+}
+
+static void setdouble(long addr, double val) {
+    *(double *)addr = val;
+
+}
+
 int set_var(lua_State *L) {
     char name[64];
     strcpy(name, lua_tostring(L, 1));
@@ -31,12 +40,12 @@ int set_var(lua_State *L) {
         return 1;
 
     if(!strcmp(var.type, "int")) {
-        *(int *) var.link = lua_tointeger(L, 2);
+        setint(var.link, lua_tointeger(L,2));
         return 0;
     }
 
     if(!strcmp(var.type, "double")) {
-        *(double *) var.link = lua_tonumber(L, 2);
+        setdouble(var.link, lua_tonumber(L,2));
         return 0;
     }
 

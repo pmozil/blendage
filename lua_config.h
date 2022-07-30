@@ -14,6 +14,8 @@
 #ifndef CONF_VARS
 #define CONF_VARS
 static void tohex(char *inp, float *f);
+static void setint(long addr, int val);
+static void setdouble(long addr, double val);
 int set_var(lua_State *L);
 
 static int sloppyfocus = 1;
@@ -32,6 +34,7 @@ static int natural_scrolling = 0;
 static int disable_while_typing = 1;
 static int left_handed = 0;
 static int middle_button_emulation = 0;
+static double accel_speed = 0.0;
 
 typedef struct var_list {
     char name[64];
@@ -40,22 +43,23 @@ typedef struct var_list {
 } var_list;
 
 static var_list links[] = {
-    { "sloppyfocus",                "int", (long) &sloppyfocus },
-    { "borderpx",                   "int", (long) &borderpx },
-    { "gappx",                      "int", (long) &gappx },
-    { "lockfullscreen",             "int", (long) &lockfullscreen },
-    { "rootcolor",                  "hex", (long) &rootcolor },
-    { "bordercolor",                "hex", (long) &bordercolor },
-    { "focuscolor",                 "hex", (long) &focuscolor },
-    { "repeat_rate",                "int", (long) &repeat_rate },
-    { "repeat_delay",               "int", (long) &repeat_delay },
-    { "tap_to_click",               "int", (long) &tap_to_click },
-    { "tap_and_drag",               "int", (long) &tap_and_drag },
-    { "drag_lock",                  "int", (long) &drag_lock },
-    { "natural_scrolling",          "int", (long) &natural_scrolling },
-    { "disable_while_typing",       "int", (long) &disable_while_typing },
-    { "left_handed",                "int", (long) &left_handed },
-    { "middle_button_emulation",    "int", (long) &middle_button_emulation },
+    { "sloppyfocus",                "int",      (long) &sloppyfocus },
+    { "borderpx",                   "int",      (long) &borderpx },
+    { "gappx",                      "int",      (long) &gappx },
+    { "lockfullscreen",             "int",      (long) &lockfullscreen },
+    { "rootcolor",                  "hex",      (long) &rootcolor },
+    { "bordercolor",                "hex",      (long) &bordercolor },
+    { "focuscolor",                 "hex",      (long) &focuscolor },
+    { "repeat_rate",                "int",      (long) &repeat_rate },
+    { "repeat_delay",               "int",      (long) &repeat_delay },
+    { "tap_to_click",               "int",      (long) &tap_to_click },
+    { "tap_and_drag",               "int",      (long) &tap_and_drag },
+    { "drag_lock",                  "int",      (long) &drag_lock },
+    { "natural_scrolling",          "int",      (long) &natural_scrolling },
+    { "disable_while_typing",       "int",      (long) &disable_while_typing },
+    { "left_handed",                "int",      (long) &left_handed },
+    { "middle_button_emulation",    "int",      (long) &middle_button_emulation },
+    { "accel_speed",                "double",   (long) &accel_speed },
 };
 
 static lua_State *lua;
