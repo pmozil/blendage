@@ -6,8 +6,13 @@
 #include <libinput.h>
 #include <limits.h>
 #include <linux/input-event-codes.h>
+#include <lua.h>
+#include <lualib.h>
+#include <lauxlib.h>
 #include <signal.h>
 #include <stdio.h>
+#include <string.h>
+#include <math.h>
 #include <stdlib.h>
 #include <sys/wait.h>
 #include <time.h>
@@ -116,12 +121,10 @@ typedef struct {
 	struct wl_listener configure;
 	struct wl_listener set_hints;
 #endif
-	int bw;
-    int gap;
+	int bw, gap;
+    unsigned short int vsplit, isfloating, isurgent, isfullscreen; 
 	unsigned int tags;
-	int isfloating, isurgent;
 	uint32_t resize; /* configure serial of a pending resize */
-	int isfullscreen;
 } Client;
 
 typedef struct {
@@ -276,6 +279,7 @@ static void setmon(Client *c, Monitor *m, unsigned int newtags);
 static void setpsel(struct wl_listener *listener, void *data);
 static void setsel(struct wl_listener *listener, void *data);
 static void setup(void);
+static int set_var(lua_State *L);
 static void sigchld(int unused);
 static void spawn(const Arg *arg);
 static void startdrag(struct wl_listener *listener, void *data);
@@ -288,6 +292,7 @@ static void togglefloating(const Arg *arg);
 static void togglefullscreen(const Arg *arg);
 static void toggletag(const Arg *arg);
 static void toggleview(const Arg *arg);
+static void tohex(char *inp, float *f);
 static void unmaplayersurfacenotify(struct wl_listener *listener, void *data);
 static void unmapnotify(struct wl_listener *listener, void *data);
 static void updatemons(struct wl_listener *listener, void *data);
