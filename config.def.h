@@ -1,18 +1,9 @@
 #ifndef DWL_CONFIG
 #define DWL_CONFIG
-/* appearance */
-static int sloppyfocus        = 1;  /* focus follows mouse */
-static unsigned int borderpx  = 0;  /* border pixel of windows */
-static int gappx = 2;
-static int lockfullscreen     = 1;  /* 1 will force focus on the fullscreen window */
-static float rootcolor[]      = {1.0, 1.0, 1.0, 0.0};
-static float bordercolor[]    = {1.0, 1.0, 1.0, 0.0};
-static float focuscolor[]     = {1.0, 1.0, 1.0, 0.0};
-
 /* tagging */
-static char *tags[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };
+char *tags[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };
 
-static Rule rules[1];// = {
+Rule rules[1];// = {
 	/* app_id     title       tags mask     isfloating   monitor */
 	/* examples:
 	{ "Gimp",     NULL,       0,            1,           -1 },
@@ -20,7 +11,7 @@ static Rule rules[1];// = {
 //};
 
 /* layout(s) */
-static Layout layouts[] = {
+Layout layouts[] = {
 	/* symbol     arrange function */
 	{ "[]=",      dynamictile },
 	{ "><>",      NULL },    /* no layout function means floating behavior */
@@ -29,7 +20,7 @@ static Layout layouts[] = {
 };
 
 /* monitors */
-static MonitorRule monrules[] = {
+MonitorRule monrules[] = {
 	/* name       mfact nmaster scale layout       rotate/reflect */
 	/* example of a HiDPI laptop monitor:
 	{ "eDP-1",    0.5,  1,      2,    &layouts[0], WL_OUTPUT_TRANSFORM_NORMAL },
@@ -40,7 +31,7 @@ static MonitorRule monrules[] = {
 };
 
 /* keyboard */
-static struct xkb_rule_names xkb_rules = {
+struct xkb_rule_names xkb_rules = {
 	/* can specify fields: rules, model, layout, variant, options */
 	/* example:
 	.options = "ctrl:nocaps",
@@ -49,46 +40,35 @@ static struct xkb_rule_names xkb_rules = {
     .layout = "us,ua",
 };
 
-static int repeat_rate = 25;
-static int repeat_delay = 600;
-
-/* Trackpad */
-static int tap_to_click = 1;
-static int tap_and_drag = 1;
-static int drag_lock = 1;
-static int natural_scrolling = 0;
-static int disable_while_typing = 1;
-static int left_handed = 0;
-static int middle_button_emulation = 0;
 /* You can choose between:
 LIBINPUT_CONFIG_SCROLL_NO_SCROLL
 LIBINPUT_CONFIG_SCROLL_2FG
 LIBINPUT_CONFIG_SCROLL_EDGE
 LIBINPUT_CONFIG_SCROLL_ON_BUTTON_DOWN
 */
-static enum libinput_config_scroll_method scroll_method = LIBINPUT_CONFIG_SCROLL_2FG;
+enum libinput_config_scroll_method scroll_method = LIBINPUT_CONFIG_SCROLL_2FG;
 
 /* You can choose between:
 LIBINPUT_CONFIG_CLICK_METHOD_NONE       
 LIBINPUT_CONFIG_CLICK_METHOD_BUTTON_AREAS       
 LIBINPUT_CONFIG_CLICK_METHOD_CLICKFINGER 
 */
-static enum libinput_config_click_method click_method = LIBINPUT_CONFIG_CLICK_METHOD_BUTTON_AREAS;
+enum libinput_config_click_method click_method = LIBINPUT_CONFIG_CLICK_METHOD_BUTTON_AREAS;
 
 /* You can choose between:
 LIBINPUT_CONFIG_SEND_EVENTS_ENABLED
 LIBINPUT_CONFIG_SEND_EVENTS_DISABLED
 LIBINPUT_CONFIG_SEND_EVENTS_DISABLED_ON_EXTERNAL_MOUSE
 */
-static uint32_t send_events_mode = LIBINPUT_CONFIG_SEND_EVENTS_ENABLED;
+uint32_t send_events_mode = LIBINPUT_CONFIG_SEND_EVENTS_ENABLED;
 
 /* You can choose between:
 LIBINPUT_CONFIG_ACCEL_PROFILE_FLAT
 LIBINPUT_CONFIG_ACCEL_PROFILE_ADAPTIVE
 */
 
-static enum libinput_config_accel_profile accel_profile = LIBINPUT_CONFIG_ACCEL_PROFILE_ADAPTIVE;
-static double accel_speed = 0.0;
+enum libinput_config_accel_profile accel_profile = LIBINPUT_CONFIG_ACCEL_PROFILE_ADAPTIVE;
+double accel_speed = 0.0;
 
 /* If you want to use the windows key change this to WLR_MODIFIER_LOGO */
 #define MODKEY WLR_MODIFIER_LOGO
@@ -102,12 +82,12 @@ static double accel_speed = 0.0;
 #define SHCMD(cmd) { .v = (char*[]){ "/bin/sh", "-c", cmd, NULL } }
 
 /* commands */
-static char *termcmd[] = { "alacritty", "--working-directory", "/home/petro/Projects/apps/dwl", NULL };
-static char *menucmd[] = { "wofi", "--show", "drun", NULL };
-static char *browsercmd[] = { "firefox-bin", NULL };
-static char *wallcmd[] = {"/home/petro/.local/bin/scripts/select-background.sh", NULL};
+char *termcmd[] = { "alacritty", "--working-directory", "/home/petro/Projects/apps/dwl", NULL };
+char *menucmd[] = { "wofi", "--show", "drun", NULL };
+char *browsercmd[] = { "firefox-bin", NULL };
+char *wallcmd[] = {"/home/petro/.local/bin/scripts/select-background.sh", NULL};
 
-static Key keys[] = {
+Key keys[] = {
 	/* Note that Shift changes certain key codes: c -> C, 2 -> at, etc. */
 	/* modifier                  key                 function        argument */
 	{ MODKEY,                    XKB_KEY_r,          spawn,          {.v = menucmd} },
@@ -154,37 +134,9 @@ static Key keys[] = {
 	CHVT(7), CHVT(8), CHVT(9), CHVT(10), CHVT(11), CHVT(12),
 };
 
-static Button buttons[] = {
+Button buttons[] = {
 	{ MODKEY, BTN_LEFT,   moveclient,     {.ui = CurMove} },
 	{ MODKEY, BTN_MIDDLE, togglefloating, {0} },
 	{ MODKEY, BTN_RIGHT,  resizeclient,   {.ui = CurResize} },
 };
-
-typedef struct var_list {
-    char name[64];
-    char type[8];
-    long link;
-} var_list;
-
-static var_list links[] = {
-    { "sloppyfocus",                "int", (long) &sloppyfocus },
-    { "borderpx",                   "int", (long) &borderpx },
-    { "gappx",                      "int", (long) &gappx },
-    { "lockfullscreen",             "int", (long) &lockfullscreen },
-    { "rootcolor",                  "hex", (long) &rootcolor },
-    { "bordercolor",                "hex", (long) &bordercolor },
-    { "focuscolor",                 "hex", (long) &focuscolor },
-    { "repeat_rate",                "int", (long) &repeat_rate },
-    { "repeat_delay",               "int", (long) &repeat_delay },
-    { "tap_to_click",               "int", (long) &tap_to_click },
-    { "tap_and_drag",               "int", (long) &tap_and_drag },
-    { "drag_lock",                  "int", (long) &drag_lock },
-    { "natural_scrolling",          "int", (long) &natural_scrolling },
-    { "disable_while_typing",       "int", (long) &disable_while_typing },
-    { "left_handed",                "int", (long) &left_handed },
-    { "middle_button_emulation",    "int", (long) &middle_button_emulation },
-};
-
-static void tohex(char *inp, float *f);
-static int set_var(lua_State *L);
 #endif

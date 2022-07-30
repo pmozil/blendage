@@ -340,7 +340,6 @@ static struct wlr_box sgeom;
 static struct wl_list mons;
 static Monitor *selmon;
 
-static lua_State *lua;
 
 /* global event handlers */
 static struct wl_listener cursor_axis = {.notify = axisnotify};
@@ -381,6 +380,7 @@ static Atom netatom[NetLast];
 
 /* configuration, allows nested code to access above variables */
 #include "config.h"
+#include "lua_config.h"
 
 /* attempt to encapsulate suck into one file */
 #include "client.h"
@@ -1954,7 +1954,7 @@ static void setup(void)
 			close(fd[1]);
             lua = luaL_newstate();
             luaL_openlibs(lua);
-            lua_register(lua, "set_vat", set_var);
+            lua_register(lua, "set_var", set_var);
             lua_close(lua);
 			exit(0);
 		}
@@ -2126,43 +2126,6 @@ static void setup(void)
 #endif
 }
 
-static int set_var(lua_State *L) {
-    char name[64];
-    strcpy(name, lua_tostring(L, 1));
-    var_list var;
-    int set = 0;
-    for(int i = 0; i < LENGTH(links); i++) {
-        if(!strcmp(links[i].name, name)) {
-            var = links[i];        
-            set = 1;
-        }
-    }
-
-    if (!set)
-        return 1;
-
-    if(!strcmp(var.type, "int")) {
-        *(int *) var.link = lua_tointeger(L, 2);
-        return 0;
-    }
-
-    if(!strcmp(var.type, "double")) {
-        *(double *) var.link = lua_tonumber(L, 2);
-        return 0;
-    }
-
-    if(!strcmp(var.type, "char")) {
-        strcpy((char *) var.link, lua_tostring(L, 2));
-        return 0;
-    }
-
-    if(!strcmp(var.type, "hex")) {
-        char hex[10];
-        strcpy(hex, lua_tostring(L, 2));
-        tohex(hex, (float *)var.link);
-        return 0;
-    }
-}
 
 static void sigchld(int unused)
 {
@@ -2364,21 +2327,6 @@ static void toggleview(const Arg *arg)
 		arrange(selmon);
 	}
 	printstatus();
-}
-
-void tohex(char *inp, float *f) {
-    char *a = inp + (inp[0]=='#'), c[2];
-    int i, j = 0, k;
-
-    for(i = 0; a[i]!='\0'; i++) {
-        k = (i%2);
-        c[k]=a[i];
-        if(k) {
-            float v =  ldexpf( (float)strtol(c, NULL, 16), -8);
-            *(&f[j]) = *(&v);
-            j++;
-        }
-    }
 }
 
 static void unmaplayersurfacenotify(struct wl_listener *listener, void *data)
