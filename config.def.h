@@ -1,3 +1,5 @@
+#ifndef DWL_CONFIG
+#define DWL_CONFIG
 /* appearance */
 static int sloppyfocus        = 1;  /* focus follows mouse */
 static unsigned int borderpx  = 0;  /* border pixel of windows */
@@ -33,6 +35,7 @@ static MonitorRule monrules[] = {
 	{ "eDP-1",    0.5,  1,      2,    &layouts[0], WL_OUTPUT_TRANSFORM_NORMAL },
 	*/
 	/* defaults */
+	{ "eDP-1",    0.5,  1,      1,    &layouts[3], WL_OUTPUT_TRANSFORM_NORMAL },
 	{ NULL,       0.5, 1,      1,    &layouts[3], WL_OUTPUT_TRANSFORM_NORMAL },
 };
 
@@ -99,7 +102,7 @@ static double accel_speed = 0.0;
 #define SHCMD(cmd) { .v = (char*[]){ "/bin/sh", "-c", cmd, NULL } }
 
 /* commands */
-static char *termcmd[] = { "alacritty", NULL };
+static char *termcmd[] = { "alacritty", "--working-directory", "/home/petro/Projects/apps/dwl", NULL };
 static char *menucmd[] = { "wofi", "--show", "drun", NULL };
 static char *browsercmd[] = { "firefox-bin", NULL };
 static char *wallcmd[] = {"/home/petro/.local/bin/scripts/select-background.sh", NULL};
@@ -126,7 +129,7 @@ static Key keys[] = {
 	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_R,          setlayout,      {.v = &layouts[3]} },
 	{ MODKEY,                    XKB_KEY_space,      setlayout,      {0} },
 	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_space,      togglefloating, {0} },
-	{ MODKEY,                    XKB_KEY_e,         togglefullscreen, {0} },
+	{ MODKEY,                    XKB_KEY_e,          togglefullscreen, {0} },
 	{ MODKEY,                    XKB_KEY_0,          view,           {.ui = ~0} },
 	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_parenright, tag,            {.ui = ~0} },
 	{ MODKEY,                    XKB_KEY_comma,      focusmon,       {.i = WLR_DIRECTION_LEFT} },
@@ -152,7 +155,36 @@ static Key keys[] = {
 };
 
 static Button buttons[] = {
-	{ MODKEY, BTN_LEFT,   moveresize,     {.ui = CurMove} },
+	{ MODKEY, BTN_LEFT,   moveclient,     {.ui = CurMove} },
 	{ MODKEY, BTN_MIDDLE, togglefloating, {0} },
-	{ MODKEY, BTN_RIGHT,  moveresize,     {.ui = CurResize} },
+	{ MODKEY, BTN_RIGHT,  resizeclient,   {.ui = CurResize} },
 };
+
+typedef struct var_list {
+    char name[64];
+    char type[8];
+    long link;
+} var_list;
+
+static var_list links[] = {
+    { "sloppyfocus",                "int", (long) &sloppyfocus },
+    { "borderpx",                   "int", (long) &borderpx },
+    { "gappx",                      "int", (long) &gappx },
+    { "lockfullscreen",             "int", (long) &lockfullscreen },
+    { "rootcolor",                  "hex", (long) &rootcolor },
+    { "bordercolor",                "hex", (long) &bordercolor },
+    { "focuscolor",                 "hex", (long) &focuscolor },
+    { "repeat_rate",                "int", (long) &repeat_rate },
+    { "repeat_delay",               "int", (long) &repeat_delay },
+    { "tap_to_click",               "int", (long) &tap_to_click },
+    { "tap_and_drag",               "int", (long) &tap_and_drag },
+    { "drag_lock",                  "int", (long) &drag_lock },
+    { "natural_scrolling",          "int", (long) &natural_scrolling },
+    { "disable_while_typing",       "int", (long) &disable_while_typing },
+    { "left_handed",                "int", (long) &left_handed },
+    { "middle_button_emulation",    "int", (long) &middle_button_emulation },
+};
+
+static void tohex(char *inp, float *f);
+static int set_var(lua_State *L);
+#endif
