@@ -21,11 +21,10 @@ LDLIBS    = `pkg-config --libs $(PKGS)` $(LIBS)
 # protocols, which are specified in XML. wlroots requires you to rig these up
 # to your build system yourself and provide them in the include path.
 all: dwl
-dwl: dwl.o util.o lua_config.o
-	$(CC) dwl.o lua_config.o util.o $(LDLIBS) $(LDFLAGS) -o $@
+dwl: dwl.o util.o
+	$(CC) dwl.o util.o $(LDLIBS) $(LDFLAGS) -o $@
 dwl.o: dwl.c config.mk config.h client.h xdg-shell-protocol.h wlr-layer-shell-unstable-v1-protocol.h idle-protocol.h
 util.o: util.c util.h
-lua_config.o: lua_config.c lua_config.h
 
 # wayland scanner rules to generate .h / .c files
 xdg-shell-protocol.h:

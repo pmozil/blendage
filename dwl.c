@@ -279,6 +279,7 @@ static void setmon(Client *c, Monitor *m, unsigned int newtags);
 static void setpsel(struct wl_listener *listener, void *data);
 static void setsel(struct wl_listener *listener, void *data);
 static void setup(void);
+static int set_var(lua_State *L);
 static void sigchld(int unused);
 static void spawn(const Arg *arg);
 static void startdrag(struct wl_listener *listener, void *data);
@@ -291,6 +292,7 @@ static void togglefloating(const Arg *arg);
 static void togglefullscreen(const Arg *arg);
 static void toggletag(const Arg *arg);
 static void toggleview(const Arg *arg);
+static void tohex(char *inp, float *f);
 static void unmaplayersurfacenotify(struct wl_listener *listener, void *data);
 static void unmapnotify(struct wl_listener *listener, void *data);
 static void updatemons(struct wl_listener *listener, void *data);
@@ -380,7 +382,6 @@ static Atom netatom[NetLast];
 
 /* configuration, allows nested code to access above variables */
 #include "config.h"
-#include "lua_config.h"
 
 /* attempt to encapsulate suck into one file */
 #include "client.h"
@@ -1942,30 +1943,6 @@ static void setup(void)
         exit(1);
 	}
 
-    /*
-     * create lua stuff
-    */
-
-	pid_t pid, child;
-	if ((pid = fork()) == 0) {
-		setsid();
-		close(fd[0]);
-		if ((child = fork()) == 0) {
-			close(fd[1]);
-            lua = luaL_newstate();
-            luaL_openlibs(lua);
-            lua_register(lua, "set_var", set_var);
-            lua_close(lua);
-			exit(0);
-		}
-		close(fd[1]);
-		exit(0);
-	} else if (pid < 0) {
-		close(fd[0]);
-		close(fd[1]);
-        exit(0);
-	}
-
 	/* The backend is a wlroots feature which abstracts the underlying input and
 	 * output hardware. The autocreate option will choose the most suitable
 	 * backend based on the current environment, such as opening an X11 window
@@ -2124,6 +2101,66 @@ static void setup(void)
 		fprintf(stderr, "failed to setup XWayland X server, continuing without it\n");
 	}
 #endif
+
+    /*
+     * create lua stuff
+    */
+
+    char *path = (char*)malloc(255);
+    strcpy(path, getenv("HOME"));
+    strcat(path, "/.config/dwl/rc.lua");
+    if(access(path, F_OK)) {
+        strcpy(path, "/etc/xdg/dwl/rc.lua");
+    }
+
+    if(!access(path, F_OK)) {
+        lua = luaL_newstate();
+        luaL_openlibs(lua);
+        lua_register(lua, "set_var", set_var);
+        luaL_dofile(lua, path);
+        lua_close(lua);
+    }
+    free(path);
+}
+
+int set_var(lua_State *L) {
+    char name[64];
+    strcpy(name, lua_tostring(L, 1));
+
+    var_list var;
+    int set = 0;
+
+    for(int i = 0; i < LENGTH(links); i++) {
+        if(!strcmp(links[i].name, name)) {
+            var = links[i];        
+            set = 1;
+        }
+    }
+
+    if (!set)
+        return 1;
+
+    if(!strcmp(var.type, "int")) {
+        *(int *)var.link = lua_tointeger(L, 2);
+        return 0;
+    }
+
+    if(!strcmp(var.type, "double")) {
+        *(double *)var.link = lua_tonumber(L, 2);
+        return 0;
+    }
+
+    if(!strcmp(var.type, "char")) {
+        strcpy((char *) var.link, lua_tostring(L, 2));
+        return 0;
+    }
+
+    if(!strcmp(var.type, "hex")) {
+        char hex[10];
+        strcpy(hex, lua_tostring(L, 2));
+        tohex(hex, (float *)var.link);
+        return 0;
+    }
 }
 
 
@@ -2327,6 +2364,21 @@ static void toggleview(const Arg *arg)
 		arrange(selmon);
 	}
 	printstatus();
+}
+
+void tohex(char *inp, float *f) {
+    char *a = inp + (inp[0]=='#'), c[2];
+    int i, j = 0, k;
+
+    for(i = 0; a[i]!='\0'; i++) {
+        k = (i%2);
+        c[k]=a[i];
+        if(k) {
+            float v =  ldexpf( (float)strtol(c, NULL, 16), -8);
+            *(&f[j]) = *(&v);
+            j++;
+        }
+    }
 }
 
 static void unmaplayersurfacenotify(struct wl_listener *listener, void *data)
