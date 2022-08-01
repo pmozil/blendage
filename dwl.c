@@ -2114,7 +2114,7 @@ static void setup(void)
 		fprintf(stderr, "failed to setup XWayland X server, continuing without it\n");
 	}
 #endif
-    lus_setup(0);
+    lua_setup(0);
 }
 
 static void lua_setup(const Arg *arg) {
