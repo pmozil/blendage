@@ -46,7 +46,7 @@ clean:
 dist: clean
 	mkdir -p blend-$(VERSION)
 	cp -R LICENSE* Makefile README.md generate-version.sh client.h\
-		config.def.h config.mk protocols blend.1 blend.c util.c util.h\
+		config.def.h config.mk protocols blend.c util.c util.h\
 		blend-$(VERSION)
 	echo "echo $(VERSION)" > blend-$(VERSION)/generate-version.sh
 	tar -caf blend-$(VERSION).tar.gz blend-$(VERSION)
@@ -59,10 +59,8 @@ install: blend
 	cp -f blend $(DESTDIR)$(PREFIX)/bin
 	chmod 755 $(DESTDIR)$(PREFIX)/bin/blend
 	mkdir -p $(DESTDIR)$(MANDIR)/man1
-	cp -f blend.1 $(DESTDIR)$(MANDIR)/man1
-	chmod 644 $(DESTDIR)$(MANDIR)/man1/blend.1
 uninstall:
-	rm -f $(DESTDIR)$(PREFIX)/bin/blend $(DESTDIR)$(MANDIR)/man1/blend.1
+	rm -f $(DESTDIR)$(PREFIX)/bin/blend
 
 .SUFFIXES: .c .o
 .c.o:
