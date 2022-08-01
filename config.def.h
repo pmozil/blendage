@@ -1,9 +1,9 @@
 #ifndef DWL_CONFIG
 #define DWL_CONFIG
 /* tagging */
-char *tags[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };
+static char *tags[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };
 
-Rule rules[1];// = {
+static Rule rules[1];// = {
 	/* app_id     title       tags mask     isfloating   monitor */
 	/* examples:
 	{ "Gimp",     NULL,       0,            1,           -1 },
@@ -11,7 +11,7 @@ Rule rules[1];// = {
 //};
 
 /* layout(s) */
-Layout layouts[] = {
+static Layout layouts[] = {
 	/* symbol     arrange function */
 	{ "[]=",      dynamictile },
 	{ "><>",      NULL },    /* no layout function means floating behavior */
@@ -20,7 +20,7 @@ Layout layouts[] = {
 };
 
 /* monitors */
-MonitorRule monrules[] = {
+static MonitorRule monrules[] = {
 	/* name       mfact nmaster scale layout       rotate/reflect */
 	/* example of a HiDPI laptop monitor:
 	{ "eDP-1",    0.5,  1,      2,    &layouts[0], WL_OUTPUT_TRANSFORM_NORMAL },
@@ -31,7 +31,7 @@ MonitorRule monrules[] = {
 };
 
 /* keyboard */
-struct xkb_rule_names xkb_rules = {
+static struct xkb_rule_names xkb_rules = {
 	/* can specify fields: rules, model, layout, variant, options */
 	/* example:
 	.options = "ctrl:nocaps",
@@ -46,28 +46,28 @@ LIBINPUT_CONFIG_SCROLL_2FG
 LIBINPUT_CONFIG_SCROLL_EDGE
 LIBINPUT_CONFIG_SCROLL_ON_BUTTON_DOWN
 */
-enum libinput_config_scroll_method scroll_method = LIBINPUT_CONFIG_SCROLL_2FG;
+static enum libinput_config_scroll_method scroll_method = LIBINPUT_CONFIG_SCROLL_2FG;
 
 /* You can choose between:
 LIBINPUT_CONFIG_CLICK_METHOD_NONE       
 LIBINPUT_CONFIG_CLICK_METHOD_BUTTON_AREAS       
 LIBINPUT_CONFIG_CLICK_METHOD_CLICKFINGER 
 */
-enum libinput_config_click_method click_method = LIBINPUT_CONFIG_CLICK_METHOD_BUTTON_AREAS;
+static enum libinput_config_click_method click_method = LIBINPUT_CONFIG_CLICK_METHOD_BUTTON_AREAS;
 
 /* You can choose between:
 LIBINPUT_CONFIG_SEND_EVENTS_ENABLED
 LIBINPUT_CONFIG_SEND_EVENTS_DISABLED
 LIBINPUT_CONFIG_SEND_EVENTS_DISABLED_ON_EXTERNAL_MOUSE
 */
-uint32_t send_events_mode = LIBINPUT_CONFIG_SEND_EVENTS_ENABLED;
+static uint32_t send_events_mode = LIBINPUT_CONFIG_SEND_EVENTS_ENABLED;
 
 /* You can choose between:
 LIBINPUT_CONFIG_ACCEL_PROFILE_FLAT
 LIBINPUT_CONFIG_ACCEL_PROFILE_ADAPTIVE
 */
 
-enum libinput_config_accel_profile accel_profile = LIBINPUT_CONFIG_ACCEL_PROFILE_ADAPTIVE;
+static enum libinput_config_accel_profile accel_profile = LIBINPUT_CONFIG_ACCEL_PROFILE_ADAPTIVE;
 
 /* If you want to use the windows key change this to WLR_MODIFIER_LOGO */
 #define MODKEY WLR_MODIFIER_LOGO
@@ -81,12 +81,12 @@ enum libinput_config_accel_profile accel_profile = LIBINPUT_CONFIG_ACCEL_PROFILE
 #define SHCMD(cmd) { .v = (char*[]){ "/bin/sh", "-c", cmd, NULL } }
 
 /* commands */
-char *termcmd[] = { "alacritty", "--working-directory", "/home/petro/Projects/apps/dwl", NULL };
-char *menucmd[] = { "wofi", "--show", "drun", NULL };
-char *browsercmd[] = { "firefox-bin", NULL };
-char *wallcmd[] = {"/home/petro/.local/bin/scripts/select-background.sh", NULL};
+static char *termcmd[] = { "alacritty", "--working-directory", "/home/petro/Projects/apps/dwl", NULL };
+static char *menucmd[] = { "wofi", "--show", "drun", NULL };
+static char *browsercmd[] = { "firefox-bin", NULL };
+static char *wallcmd[] = {"/home/petro/.local/bin/scripts/select-background.sh", NULL};
 
-Key keys[] = {
+static Key keys[] = {
 	/* Note that Shift changes certain key codes: c -> C, 2 -> at, etc. */
 	/* modifier                  key                 function        argument */
 	{ MODKEY,                    XKB_KEY_r,          spawn,          {.v = menucmd} },

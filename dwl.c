@@ -1469,7 +1469,6 @@ static void motionnotify(uint32_t time)
             return;
         }
 
-        Client *c;
         xytonode(cursor->x, cursor->y, NULL, &c, NULL, NULL, NULL);
         if(grabc && c && !c->isfloating) {
             swapclient(c, grabc);
@@ -1943,6 +1942,8 @@ static void setup(void)
 {
 	/* The Wayland display is managed by libwayland. It handles accepting
 	 * clients from the Unix socket, manging Wayland globals, and so on. */
+    char *path = (char*)malloc(255);
+    int fd[2];
 	dpy = wl_display_create();
 
 	/* Set up signal handlers */
@@ -1950,7 +1951,6 @@ static void setup(void)
 	signal(SIGINT, quitsignal);
 	signal(SIGTERM, quitsignal);
 
-    int fd[2];
 	if (pipe(fd) != 0) {
 		printf("unable to create pipe for fork\n");
         exit(1);
@@ -2119,7 +2119,6 @@ static void setup(void)
      * create lua stuff
     */
 
-    char *path = (char*)malloc(255);
     strcpy(path, getenv("HOME"));
     strcat(path, "/.config/dwl/rc.lua");
     if(access(path, F_OK)) {
@@ -2130,7 +2129,7 @@ static void setup(void)
         lua = luaL_newstate();
         luaL_openlibs(lua);
         lua_register(lua, "set_var", set_var);
-        luaL_dofile(lua, path);
+        (void) luaL_dofile(lua, path);
         lua_close(lua);
     }
     free(path);
@@ -2138,10 +2137,10 @@ static void setup(void)
 
 int set_var(lua_State *L) {
     char name[64];
-    strcpy(name, lua_tostring(L, 1));
-
     var_list var;
     int set = 0;
+
+    strcpy(name, lua_tostring(L, 1));
 
     for(int i = 0; i < LENGTH(links); i++) {
         if(!strcmp(links[i].name, name)) {
@@ -2174,6 +2173,9 @@ int set_var(lua_State *L) {
         tohex(hex, (float *)var.link);
         return 0;
     }
+
+    else
+        return 0;
 }
 
 
@@ -2216,11 +2218,12 @@ static void startdrag(struct wl_listener *listener, void *data)
 
 static void swapclient(Client *a, Client *b) {
 
+    struct wl_list *apos = (&a->link==&clients) ? &clients : a->link.prev,
+                   *bpos = (&b->link==&clients) ? &clients : b->link.prev;
+
 	if (!a || !selmon->lt[selmon->sellt]->arrange || a->isfloating || !b || b->isfloating || a==b)
 		return;
 
-    struct wl_list *apos = (&a->link==&clients) ? &clients : a->link.prev,
-                   *bpos = (&b->link==&clients) ? &clients : b->link.prev;
 
     if(apos==&b->link) {
         wl_list_remove(&a->link);
