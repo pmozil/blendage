@@ -788,11 +788,17 @@ static void commitnotify(struct wl_listener *listener, void *data)
 {
 	Client *c = wl_container_of(listener, c, commit);
 
+ 	struct wlr_box box;
+ 	client_get_geometry(c, &box);
+
 	/* mark a pending resize as completed */
-	if (c->resize && c->resize <= c->surface.xdg->current.configure_serial)
+ 	if (c->mon && !wlr_box_empty(&box) && (box.width != c->geom.width - 2 * c->bw
+ 			|| box.height != c->geom.height - 2 * c->bw))
+ 		arrange(c->mon);
+ 	if (c->resize && (c->resize <= c->surface.xdg->current.configure_serial
+ 			|| (c->surface.xdg->current.geometry.width == c->surface.xdg->pending.geometry.width
+ 			&& c->surface.xdg->current.geometry.height == c->surface.xdg->pending.geometry.height)))
 		c->resize = 0;
-	else if (c->resize)
-		c->resize = client_set_size(c, c->geom.width - 2 * c->bw, c->geom.height - 2 * c->bw);
 }
 
 static void createidleinhibitor(struct wl_listener *listener, void *data)
@@ -1355,7 +1361,7 @@ static void maplayersurfacenotify(struct wl_listener *listener, void *data)
 static void mapnotify(struct wl_listener *listener, void *data)
 {
 	/* Called when the surface is mapped, or ready to display on-screen. */
-	Client *c = wl_container_of(listener, c, map);
+    Client *p, *c = wl_container_of(listener, c, map);
 	int i;
 
 	/* Create scene tree for this client and its border */
@@ -1385,15 +1391,22 @@ static void mapnotify(struct wl_listener *listener, void *data)
 	/* Initialize client geometry with room for border */
 	client_set_tiled(c, WLR_EDGE_TOP | WLR_EDGE_BOTTOM | WLR_EDGE_LEFT | WLR_EDGE_RIGHT);
 	client_get_geometry(c, &c->geom);
-	c->geom.width -= 2 * c->bw;
-	c->geom.height -= 2 * c->bw;
+	c->geom.width += 2 * c->bw;
+	c->geom.height += 2 * c->bw;
 
 	/* Insert this client into client lists. */
 	wl_list_insert(&clients, &c->link);
 	wl_list_insert(&fstack, &c->flink);
 
 	/* Set initial monitor, tags, floating status, and focus */
-	applyrules(c);
+    if ((p = client_get_parent(c))) {
+		/* Set the same monitor and tags than its parent */
+		c->isfloating = 1;
+		wlr_scene_node_reparent(c->scene, layers[LyrFloat]);
+        setmon(c, p->mon ? p->mon : selmon, p->tags);
+	} else {
+		applyrules(c);
+	}
 	printstatus();
 
 	if (c->isfullscreen)
@@ -2468,7 +2481,7 @@ static void urgent(struct wl_listener *listener, void *data)
 {
 	struct wlr_xdg_activation_v1_request_activate_event *event = data;
 	Client *c = client_from_wlr_surface(event->surface);
-	if (c != selclient()) {
+	if ( c && c != selclient()) {
 		c->isurgent = 1;
 		printstatus();
 	}
