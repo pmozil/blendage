@@ -11,7 +11,7 @@ WAYLAND_PROTOCOLS = `pkg-config --variable=pkgdatadir wayland-protocols`
 WAYLAND_SCANNER   = `pkg-config --variable=wayland_scanner wayland-scanner`
 
 # CFLAGS / LDFLAGS
-PKGS      = wlroots wayland-server xkbcommon libinput lua $(XLIBS)
+PKGS      = wlroots wayland-server xkbcommon libinput lua5.4 $(XLIBS)
 BLENDCFLAGS = `pkg-config --cflags $(PKGS)` $(BLENDCPPFLAGS) $(CFLAGS) $(XWAYLAND)
 LDLIBS    = `pkg-config --libs $(PKGS)` $(LIBS)
 
