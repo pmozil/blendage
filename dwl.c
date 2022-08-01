@@ -279,7 +279,7 @@ static void setmon(Client *c, Monitor *m, unsigned int newtags);
 static void setpsel(struct wl_listener *listener, void *data);
 static void setsel(struct wl_listener *listener, void *data);
 static void setup(void);
-static void set_lua(const Arg *arg);
+static void lua_setup(const Arg *arg);
 static int set_var(lua_State *L);
 static void sigchld(int unused);
 static void spawn(const Arg *arg);
@@ -2114,10 +2114,10 @@ static void setup(void)
 		fprintf(stderr, "failed to setup XWayland X server, continuing without it\n");
 	}
 #endif
-    set_lua(0);
+    lus_setup(0);
 }
 
-static void set_lua(const Arg *arg) {
+static void lua_setup(const Arg *arg) {
     /*
      * do lua stuff
     */
