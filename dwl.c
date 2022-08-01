@@ -1391,8 +1391,8 @@ static void mapnotify(struct wl_listener *listener, void *data)
 	/* Initialize client geometry with room for border */
 	client_set_tiled(c, WLR_EDGE_TOP | WLR_EDGE_BOTTOM | WLR_EDGE_LEFT | WLR_EDGE_RIGHT);
 	client_get_geometry(c, &c->geom);
-	c->geom.width += 2 * c->bw;
-	c->geom.height += 2 * c->bw;
+	c->geom.width -= 2 * c->bw;
+	c->geom.height -= 2 * c->bw;
 
 	/* Insert this client into client lists. */
 	wl_list_insert(&clients, &c->link);
@@ -2119,24 +2119,21 @@ static void setup(void)
      * create lua stuff
     */
 
-	if (fork() == 0) {
-        char *path = (char*)malloc(255);
-        strcpy(path, getenv("HOME"));
-        strcat(path, "/.config/dwl/rc.lua");
-        if(access(path, F_OK)) {
-            strcpy(path, "/etc/xdg/dwl/rc.lua");
-        }
-
-        if(!access(path, F_OK)) {
-            lua = luaL_newstate();
-            luaL_openlibs(lua);
-            lua_register(lua, "set_var", set_var);
-            luaL_dofile(lua, path);
-            lua_close(lua);
-        }
-        free(path);
-        exit(0);
+    char *path = (char*)malloc(255);
+    strcpy(path, getenv("HOME"));
+    strcat(path, "/.config/dwl/rc.lua");
+    if(access(path, F_OK)) {
+        strcpy(path, "/etc/xdg/dwl/rc.lua");
     }
+
+    if(!access(path, F_OK)) {
+        lua = luaL_newstate();
+        luaL_openlibs(lua);
+        lua_register(lua, "set_var", set_var);
+        luaL_dofile(lua, path);
+        lua_close(lua);
+    }
+    free(path);
 }
 
 int set_var(lua_State *L) {
