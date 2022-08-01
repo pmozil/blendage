@@ -81,10 +81,10 @@ static enum libinput_config_accel_profile accel_profile = LIBINPUT_CONFIG_ACCEL_
 #define SHCMD(cmd) { .v = (char*[]){ "/bin/sh", "-c", cmd, NULL } }
 
 /* commands */
-static char *termcmd[] = { "alacritty", "--working-directory", "/home/petro/Projects/apps/dwl", NULL };
+static char *termcmd[] = { "alacritty", NULL };
 static char *menucmd[] = { "wofi", "--show", "drun", NULL };
 static char *browsercmd[] = { "firefox-bin", NULL };
-static char *wallcmd[] = {"/home/petro/.local/bin/scripts/select-background.sh", NULL};
+static char *wallcmd[] = {"~/.local/bin/scripts/select-background.sh", NULL};
 
 static Key keys[] = {
 	/* Note that Shift changes certain key codes: c -> C, 2 -> at, etc. */
