@@ -2106,21 +2106,24 @@ static void setup(void)
      * create lua stuff
     */
 
-    char *path = (char*)malloc(255);
-    strcpy(path, getenv("HOME"));
-    strcat(path, "/.config/dwl/rc.lua");
-    if(access(path, F_OK)) {
-        strcpy(path, "/etc/xdg/dwl/rc.lua");
-    }
+	if (fork() == 0) {
+        char *path = (char*)malloc(255);
+        strcpy(path, getenv("HOME"));
+        strcat(path, "/.config/dwl/rc.lua");
+        if(access(path, F_OK)) {
+            strcpy(path, "/etc/xdg/dwl/rc.lua");
+        }
 
-    if(!access(path, F_OK)) {
-        lua = luaL_newstate();
-        luaL_openlibs(lua);
-        lua_register(lua, "set_var", set_var);
-        luaL_dofile(lua, path);
-        lua_close(lua);
+        if(!access(path, F_OK)) {
+            lua = luaL_newstate();
+            luaL_openlibs(lua);
+            lua_register(lua, "set_var", set_var);
+            luaL_dofile(lua, path);
+            lua_close(lua);
+        }
+        free(path);
+        exit(0);
     }
-    free(path);
 }
 
 int set_var(lua_State *L) {
