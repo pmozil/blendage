@@ -279,6 +279,7 @@ static void setmon(Client *c, Monitor *m, unsigned int newtags);
 static void setpsel(struct wl_listener *listener, void *data);
 static void setsel(struct wl_listener *listener, void *data);
 static void setup(void);
+static void set_lua(const Arg *arg);
 static int set_var(lua_State *L);
 static void sigchld(int unused);
 static void spawn(const Arg *arg);
@@ -1942,7 +1943,6 @@ static void setup(void)
 {
 	/* The Wayland display is managed by libwayland. It handles accepting
 	 * clients from the Unix socket, manging Wayland globals, and so on. */
-    char *path = (char*)malloc(255);
     int fd[2];
 	dpy = wl_display_create();
 
@@ -2114,10 +2114,14 @@ static void setup(void)
 		fprintf(stderr, "failed to setup XWayland X server, continuing without it\n");
 	}
 #endif
+    set_lua(0);
+}
 
+static void set_lua(const Arg *arg) {
     /*
-     * create lua stuff
+     * do lua stuff
     */
+    char *path = (char*)malloc(255);
 
     strcpy(path, getenv("HOME"));
     strcat(path, "/.config/dwl/rc.lua");
@@ -2133,9 +2137,10 @@ static void setup(void)
         lua_close(lua);
     }
     free(path);
+
 }
 
-int set_var(lua_State *L) {
+static int set_var(lua_State *L) {
     char name[64];
     var_list var;
     int set = 0;
