@@ -1,6 +1,6 @@
 #!/bin/sh
 
-echo 1.0.0
+echo 0.0.1
 
 # if git tag --contains HEAD | grep -q $1; then
 # 	echo $1

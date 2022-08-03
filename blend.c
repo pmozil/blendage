@@ -2124,9 +2124,9 @@ static void lua_setup(const Arg *arg) {
     char *path = (char*)malloc(255);
 
     strcpy(path, getenv("HOME"));
-    strcat(path, "/.config/dwl/rc.lua");
+    strcat(path, "/.config/blend/rc.lua");
     if(access(path, F_OK)) {
-        strcpy(path, "/etc/xdg/dwl/rc.lua");
+        strcpy(path, "/etc/xdg/blend/rc.lua");
     }
 
     if(!access(path, F_OK)) {

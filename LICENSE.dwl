@@ -1,8 +1,8 @@
-Blendage - awesome for Wayland
+dwl - dwm for Wayland
 
 Copyright © 2020 dwl team
 
-See also the files LICENSE.dwl, LICENSE.tinywl, LICENSE.dwm and LICENSE.sway.
+See also the files LICENSE.tinywl, LICENSE.dwm and LICENSE.sway.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
