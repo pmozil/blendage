@@ -30,15 +30,13 @@ static MonitorRule monrules[] = {
 	{ "HDMI-A-1",       0.5, 1,      2,    &layouts[3], WL_OUTPUT_TRANSFORM_NORMAL },
 };
 
+
 /* keyboard */
-static struct xkb_rule_names xkb_rules = {
-	/* can specify fields: rules, model, layout, variant, options */
-	/* example:
-	.options = "ctrl:nocaps",
-	*/
-	.options = "grp:alt_space_toggle",
-    .layout = "us,ua",
-};
+static char kbrules[64];
+static char kbmodel[64];
+static char kbvariant[64];
+static char kblayout[64] = "us,ua";
+static char kboptions[64] = "grp:alt_space_toggle";
 
 /* You can choose between:
 LIBINPUT_CONFIG_SCROLL_NO_SCROLL
@@ -182,6 +180,11 @@ static var_list links[] = {
     { "left_handed",                "int",      (long) &left_handed },
     { "middle_button_emulation",    "int",      (long) &middle_button_emulation },
     { "accel_speed",                "double",   (long) &accel_speed },
+    { "kbrules",                    "char",     (long) &kbrules },
+    { "kbmodel",                    "char",     (long) &kbmodel },
+    { "kbvariant",                  "char",     (long) &kbvariant },
+    { "kblayout",                   "char",     (long) &kblayout },
+    { "kboptions",                  "char",     (long) &kboptions },
 };
 
 static lua_State *lua;
