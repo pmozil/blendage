@@ -494,6 +494,10 @@ static void applyrules(Client *c)
 	}
 	wlr_scene_node_reparent(c->scene, layers[c->isfloating ? LyrFloat : LyrTile]);
 	setmon(c, mon, newtags);
+    if(sloppyfocus) {
+        focusclient(c, 0);
+        selmon = mon;
+    }
 }
 
 static void arrange(Monitor *m)
@@ -901,6 +905,7 @@ static void createmon(struct wl_listener *listener, void *data)
 	/* Initialize monitor state using configured rules */
 	for (size_t i = 0; i < LENGTH(m->layers); i++)
 		wl_list_init(&m->layers[i]);
+
 	m->tagset[0] = m->tagset[1] = 1;
 	for (r = monrules; r < END(monrules); r++) {
 		if (!r->name || strstr(wlr_output->name, r->name)) {
@@ -929,7 +934,9 @@ static void createmon(struct wl_listener *listener, void *data)
 	if (!wlr_output_commit(wlr_output))
 		return;
 
-	wl_list_insert(&mons, &m->link);
+    /* TODO: add x coordinate in struct MonitorRule, and the insert the think in order of ascending x and not just last */
+
+	wl_list_insert((selmon!=NULL) ? &selmon->link : &mons, &m->link);
 	printstatus();
 
 	/* Adds this to the output layout in the order it was configured in.
@@ -1353,6 +1360,7 @@ static void keypressmod(struct wl_listener *listener, void *data)
 static void killclient(const Arg *arg)
 {
 	Client *sel = selclient();
+    focustop(selmon);
 	if (sel)
 		client_send_close(sel);
 }
