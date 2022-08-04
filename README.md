@@ -4,7 +4,7 @@ Right now there's:
 - inverse dynamic tiling
 - dynamic config with lua in development
 
-# blendage - Wayland compositor
+# blendage - a Wayland compositor
 
 Join us on our [Discord server](https://discord.gg/jJxZnrGPWN)!
 
