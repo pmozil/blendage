@@ -268,6 +268,7 @@ static void rendermon(struct wl_listener *listener, void *data);
 static void requeststartdrag(struct wl_listener *listener, void *data);
 static void resize(Client *c, int x, int y, int w, int h, int interact);
 static void resizeclient(const Arg *arg);
+static void restart(const Arg *arg);
 static void run(char *startup_cmd);
 static Client *selclient(void);
 static void setcursor(struct wl_listener *listener, void *data);
@@ -503,6 +504,7 @@ static void applyrules(Client *c)
 static void arrange(Monitor *m)
 {
 	Client *c;
+    selmon = m;
 	wl_list_for_each(c, &clients, link)
 		wlr_scene_node_set_enabled(c->scene, VISIBLEON(c, c->mon));
 
@@ -1466,11 +1468,11 @@ static void motionnotify(uint32_t time)
 	/* time is 0 in internal calls meant to restore pointer focus. */
 	if (time) {
 		wlr_idle_notify_activity(idle, seat);
+    }
 
 		/* Update selmon (even while dragging a window) */
-		if (sloppyfocus)
-			selmon = xytomon(cursor->x, cursor->y);
-	}
+	if (sloppyfocus)
+	    selmon = xytomon(cursor->x, cursor->y);
 
 	if (seat->drag && (icon = seat->drag->icon))
 		wlr_scene_node_set_position(icon->data, cursor->x + icon->surface->sx,
@@ -1544,11 +1546,6 @@ static void moveclient(const Arg *arg)
     	grabcy = cursor->y - grabc->geom.y;
         return;
     }
-
-    // Client **ns;
-    // ns = calloc(4, sizeof(Client *));
-    // neighbours(cursor->x, cursor->y, ns);
-    // free(ns);
 }
 
 static void outputmgrapply(struct wl_listener *listener, void *data)
@@ -1779,6 +1776,10 @@ static void resizeclient(const Arg *arg)
     }
 }
 
+static void restart(const Arg *arg) {
+    setup();
+}
+
 static void run(char *startup_cmd)
 {
 	/* Add a Unix socket to the Wayland display. */
@@ -1971,6 +1972,8 @@ static void setup(void)
         exit(1);
 	}
 
+    lua_setup(0);
+
 	/* The backend is a wlroots feature which abstracts the underlying input and
 	 * output hardware. The autocreate option will choose the most suitable
 	 * backend based on the current environment, such as opening an X11 window
@@ -2129,7 +2132,6 @@ static void setup(void)
 		fprintf(stderr, "failed to setup XWayland X server, continuing without it\n");
 	}
 #endif
-    lua_setup(0);
 }
 
 static void lua_setup(const Arg *arg) {
