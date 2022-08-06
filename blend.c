@@ -1972,7 +1972,6 @@ static void setup(void)
         exit(1);
 	}
 
-    lua_setup(0);
 
 	/* The backend is a wlroots feature which abstracts the underlying input and
 	 * output hardware. The autocreate option will choose the most suitable
@@ -2132,6 +2131,8 @@ static void setup(void)
 		fprintf(stderr, "failed to setup XWayland X server, continuing without it\n");
 	}
 #endif
+
+    lua_setup(0);
 }
 
 static void lua_setup(const Arg *arg) {
