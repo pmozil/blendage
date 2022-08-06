@@ -13,19 +13,20 @@ static Rule rules[1];// = {
 /* layout(s) */
 static Layout layouts[] = {
 	/* symbol     arrange function */
+	{ "[]_",      dynamictilereverse },
 	{ "[]=",      dynamictile },
 	{ "><>",      NULL },    /* no layout function means floating behavior */
 	{ "[M]",      monocle },
-	{ "[]_",      dynamictilereverse },
 };
 
 /* monitors */
 static MonitorRule monrules[] = {
-	/* name             mfact   nmaster scale layout       rotate/reflect */
-	/* defaults */
-	{ "HDMI-A-1",       0.5,    1,      2,    &layouts[3], WL_OUTPUT_TRANSFORM_NORMAL },
-	{ "eDP-1",          0.5,    1,      1,    &layouts[3], WL_OUTPUT_TRANSFORM_NORMAL },
-    { NULL,             0.5,   1,      1,    &layouts[0], WL_OUTPUT_TRANSFORM_NORMAL },
+	/* name             mfact   nmaster scale   layout       rotate/reflect 
+    *    examples: 
+    *    { "eDP-1",          0.5,    1,      1,      &layouts[3], WL_OUTPUT_TRANSFORM_NORMAL }, 
+	*    { "HDMI-A-1",       0.5,    1,      1,      &layouts[3], WL_OUTPUT_TRANSFORM_NORMAL }, 
+    */
+    { NULL,             0.5,    1,      1,      &layouts[0], WL_OUTPUT_TRANSFORM_NORMAL },
 };
 
 
@@ -98,10 +99,10 @@ static Key keys[] = {
 	{ MODKEY,                    XKB_KEY_Return,     zoom,           {0} },
 	{ MODKEY,                    XKB_KEY_Tab,        view,           {0} },
 	{ MODKEY,                    XKB_KEY_q,          killclient,     {0} },
-	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_T,          setlayout,      {.v = &layouts[0]} },
-	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_F,          setlayout,      {.v = &layouts[1]} },
-	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_M,          setlayout,      {.v = &layouts[2]} },
-	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_E,          setlayout,      {.v = &layouts[3]} },
+	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_R,          setlayout,      {.v = &layouts[0]} },
+	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_T,          setlayout,      {.v = &layouts[1]} },
+	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_F,          setlayout,      {.v = &layouts[2]} },
+	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_M,          setlayout,      {.v = &layouts[3]} },
 	{ MODKEY,                    XKB_KEY_space,      setlayout,      {0} },
 	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_space,      togglefloating, {0} },
 	{ MODKEY,                    XKB_KEY_e,          togglefullscreen, {0} },
@@ -120,7 +121,7 @@ static Key keys[] = {
 	TAGKEYS(          XKB_KEY_7, XKB_KEY_ampersand,                  6),
 	TAGKEYS(          XKB_KEY_8, XKB_KEY_asterisk,                   7),
 	TAGKEYS(          XKB_KEY_9, XKB_KEY_parenleft,                  8),
-	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_R,          lua_setup,      {0} },
+	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_A,          restart,        {0} },
 	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_Q,          quit,           {0} },
 
 	/* Ctrl-Alt-Backspace and Ctrl-Alt-Fx used to be handled by X server */

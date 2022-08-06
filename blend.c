@@ -181,7 +181,7 @@ struct Monitor {
 	struct wlr_box m;      /* monitor area, layout-relative */
 	struct wlr_box w;      /* window area, layout-relative */
 	struct wl_list layers[4]; /* LayerSurface::link */
-	const Layout *lt[2];
+	const Layout *lt[3];
 	unsigned int seltags;
 	unsigned int sellt;
 	unsigned int tagset[2];
@@ -504,7 +504,6 @@ static void applyrules(Client *c)
 static void arrange(Monitor *m)
 {
 	Client *c;
-    selmon = m;
 	wl_list_for_each(c, &clients, link)
 		wlr_scene_node_set_enabled(c->scene, VISIBLEON(c, c->mon));
 
@@ -1893,7 +1892,6 @@ static void setlayout(const Arg *arg)
 		selmon->sellt ^= 1;
 	if (arg && arg->v)
 		selmon->lt[selmon->sellt] = (Layout *)arg->v;
-	/* TODO change layout symbol? */
 	arrange(selmon);
 	printstatus();
 }
@@ -2331,7 +2329,7 @@ static void dynamictile(Monitor *m)
 
 static void dynamictilereverse(Monitor *m)
 {
-	unsigned int i, n = 0, h, mw, my,  ty;
+	unsigned int i, n = 0, h, mw, my, ty;
 	Client *c;
 
 	wl_list_for_each(c, &clients, link)
@@ -2344,19 +2342,17 @@ static void dynamictilereverse(Monitor *m)
 		mw = m->nmaster ? m->w.width * m->mfact : 0;
 	else
 		mw = m->w.width;
-
-	my = ty = 0;
-    i = 1;
-	wl_list_for_each(c, &clients, link) {
+	i = my = ty = 0;
+	wl_list_for_each_reverse(c, &clients, link) {
 		if (!VISIBLEON(c, m) || c->isfloating || c->isfullscreen)
 			continue;
-		if (i > (n - m->nmaster)) {
-			h = (m->w.height - my) / MAX(MIN((n - i + 1), m->nmaster), 1);
+		if (i < m->nmaster) {
+			h = (m->w.height - my) / (MIN(n, m->nmaster) - i);
 			resize(c, m->w.x, m->w.y + my, mw, h, 0);
 			my += c->geom.height + c->gap;
 		} else {
-			h = (m->w.height - ty) / (n + 1 - m->nmaster - i);
-			resize(c, m->w.x + mw, m->w.y + m->w.height - ty - h, m->w.width - mw, h, 0);
+			h = (m->w.height - ty) / (n - i);
+			resize(c, m->w.x + mw, m->w.y + ty, m->w.width - mw, h, 0);
 			ty += c->geom.height + c->gap;
 		}
 		i++;
