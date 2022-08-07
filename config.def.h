@@ -34,7 +34,7 @@ static MonitorRule monrules[] = {
 static char kbrules[64];
 static char kbmodel[64];
 static char kbvariant[64];
-static char kblayout[64] = "us,ua";
+static char kblayout[64] = "us";
 static char kboptions[64] = "grp:alt_space_toggle";
 
 /* You can choose between:
@@ -184,6 +184,14 @@ static var_list links[] = {
     { "kbvariant",                  "char",     (long) &kbvariant },
     { "kblayout",                   "char",     (long) &kblayout },
     { "kboptions",                  "char",     (long) &kboptions },
+};
+
+static var_list kbd_props[] = {
+    { "rules",                      "char",     (long) &kbrules},
+    { "model",                      "char",     (long) &kbmodel },
+    { "variant",                    "char",     (long) &kbvariant },
+    { "layout",                     "char",     (long) &kblayout },
+    { "options",                    "char",     (long) &kboptions },
 };
 
 static lua_State *lua;

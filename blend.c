@@ -282,6 +282,7 @@ static void setsel(struct wl_listener *listener, void *data);
 static void setup(void);
 static void lua_setup(const Arg *arg);
 static int set_var(lua_State *L);
+static int set_keyboard_props(lua_State *L);
 static void sigchld(int unused);
 static void spawn(const Arg *arg);
 static void startdrag(struct wl_listener *listener, void *data);
@@ -924,6 +925,7 @@ static void createmon(struct wl_listener *listener, void *data)
 	 * monitor supports only a specific set of modes. We just pick the
 	 * monitor's preferred mode; a more sophisticated compositor would let
 	 * the user configure it. */
+    /* TODO: add user config for monitors */
 	wlr_output_set_mode(wlr_output, wlr_output_preferred_mode(wlr_output));
 	wlr_output_enable_adaptive_sync(wlr_output, 1);
 
@@ -1420,7 +1422,7 @@ static void mapnotify(struct wl_listener *listener, void *data)
 		/* Set the same monitor and tags than its parent */
 		c->isfloating = 1;
 		wlr_scene_node_reparent(c->scene, layers[LyrFloat]);
-        setmon(c, p->mon ? p->mon : selmon, p->tags);
+        setmon(c, selmon ? selmon : (p->mon ? p->mon : selmon), p->tags);
 	} else {
 		applyrules(c);
 	}
@@ -2149,6 +2151,7 @@ static void lua_setup(const Arg *arg) {
         lua = luaL_newstate();
         luaL_openlibs(lua);
         lua_register(lua, "set_var", set_var);
+        lua_register(lua, "set_keyboard_props", set_keyboard_props);
         (void) luaL_dofile(lua, path);
         lua_close(lua);
     }
@@ -2197,6 +2200,31 @@ static int set_var(lua_State *L) {
 
     else
         return 0;
+}
+
+static int set_keyboard_props(lua_State *L) {
+    char name[64];
+    var_list var;
+    int set = 0;
+
+    strcpy(name, lua_tostring(L, 1));
+
+    for(int i = 0; i < LENGTH(kbd_props); i++) {
+        if(!strcmp(kbd_props[i].name, name)) {
+            var = kbd_props[i];        
+            set = 1;
+        }
+    }
+
+    if (!set)
+        return 1;
+
+    if(!strcmp(var.type, "char")) {
+        strcpy((char *) var.link, lua_tostring(L, 2));
+        return 0;
+    }
+
+    return 1;
 }
 
 
