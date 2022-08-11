@@ -199,6 +199,12 @@ typedef struct {
 	enum wl_output_transform rr;
 } MonitorRule;
 
+typedef struct MonitorProps {
+    struct MonitorProps *next;
+    int w, h, x, y, rr;
+    char *name;
+} MonitorProps;
+
 typedef struct {
 	const char *id;
 	const char *title;
@@ -283,6 +289,7 @@ static void setup(void);
 static void lua_setup(const Arg *arg);
 static int set_var(lua_State *L);
 static int set_keyboard_props(lua_State *L);
+static int set_mon_props(lua_State *L);
 static void sigchld(int unused);
 static void spawn(const Arg *arg);
 static void startdrag(struct wl_listener *listener, void *data);
@@ -344,7 +351,7 @@ static struct wlr_output_layout *output_layout;
 static struct wlr_box sgeom;
 static struct wl_list mons;
 static Monitor *selmon;
-
+static MonitorProps *monprops;
 
 /* global event handlers */
 static struct wl_listener cursor_axis = {.notify = axisnotify};
@@ -925,7 +932,7 @@ static void createmon(struct wl_listener *listener, void *data)
 	 * monitor supports only a specific set of modes. We just pick the
 	 * monitor's preferred mode; a more sophisticated compositor would let
 	 * the user configure it. */
-    /* TODO: add user config for monitors */
+    /* TODO: parse over monprops here, to check for specific monitor properties */
 	wlr_output_set_mode(wlr_output, wlr_output_preferred_mode(wlr_output));
 	wlr_output_enable_adaptive_sync(wlr_output, 1);
 
@@ -1960,6 +1967,9 @@ static void setup(void)
 	/* The Wayland display is managed by libwayland. It handles accepting
 	 * clients from the Unix socket, manging Wayland globals, and so on. */
     int fd[2];
+
+    lua_setup(0);
+
 	dpy = wl_display_create();
 
 	/* Set up signal handlers */
@@ -2132,7 +2142,6 @@ static void setup(void)
 	}
 #endif
 
-    lua_setup(0);
 }
 
 static void lua_setup(const Arg *arg) {
@@ -2150,8 +2159,11 @@ static void lua_setup(const Arg *arg) {
     if(!access(path, F_OK)) {
         lua = luaL_newstate();
         luaL_openlibs(lua);
+        /* register C functions to use in lua */
         lua_register(lua, "set_var", set_var);
         lua_register(lua, "set_keyboard_props", set_keyboard_props);
+        lua_register(lua, "set_mon_props", set_mon_props);
+
         (void) luaL_dofile(lua, path);
         lua_close(lua);
     }
@@ -2227,6 +2239,62 @@ static int set_keyboard_props(lua_State *L) {
     return 1;
 }
 
+static int set_mon_props(lua_State *L) {
+    char name[64];
+    int unset = 1;
+    MonitorProps *p, *new;
+
+    strcpy(name, lua_tostring(L, 1));
+
+    for(p=monprops; p!=NULL; p = p->next ) {
+        if(!strcmp(p->name, name)) {
+            unset = 0;
+            break;
+        }
+    }
+
+    if(unset) {
+        new = (MonitorProps *) malloc(sizeof(MonitorProps*));
+        strcpy(new->name, name);
+
+        if(monprops!=NULL)
+            new->next = monprops;
+
+        monprops = new;
+
+        p =  new;
+    }
+
+    /* We reuse name for the property name, because, like, why not? */
+    strcpy(name, lua_tostring(L, 2));
+
+    if(!strcmp(name, "width")) {
+        p->w = lua_tointeger(L, 3);
+        return 0;
+    }
+
+    if(!strcmp(name, "height")) {
+        p->h = lua_tointeger(L, 3);
+        return 0;
+    }
+
+    if(!strcmp(name, "x")) {
+        p->x = lua_tointeger(L, 3);
+        return 0;
+    }
+
+    if(!strcmp(name, "y")) {
+        p->y = lua_tointeger(L, 3);
+        return 0;
+    }
+
+    if(!strcmp(name, "refresh_rate")) {
+        p->rr = lua_tointeger(L, 3);
+        return 0;
+    }
+    
+    return 1;
+}
 
 static void sigchld(int unused)
 {
