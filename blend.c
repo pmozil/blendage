@@ -200,7 +200,7 @@ typedef struct {
 } MonitorRule;
 
 typedef struct MonitorProps {
-    struct MonitorProps *next;
+    struct wl_list link;
     int w, h, x, y, rr;
     char *name;
 } MonitorProps;
@@ -351,7 +351,7 @@ static struct wlr_output_layout *output_layout;
 static struct wlr_box sgeom;
 static struct wl_list mons;
 static Monitor *selmon;
-static MonitorProps *monprops;
+static struct wl_list monprops;
 
 /* global event handlers */
 static struct wl_listener cursor_axis = {.notify = axisnotify};
@@ -2156,6 +2156,8 @@ static void lua_setup(const Arg *arg) {
         strcpy(path, "/etc/xdg/blend/rc.lua");
     }
 
+    wl_list_init(&monprops);
+
     if(!access(path, F_OK)) {
         lua = luaL_newstate();
         luaL_openlibs(lua);
@@ -2246,23 +2248,20 @@ static int set_mon_props(lua_State *L) {
 
     strcpy(name, lua_tostring(L, 1));
 
-    for(p=monprops; p!=NULL; p = p->next ) {
-        if(!strcmp(p->name, name)) {
+    wl_list_for_each(p, &monprops, link) {
+        if(!strcmp(p->name, name)){
             unset = 0;
             break;
         }
     }
 
     if(unset) {
-        new = (MonitorProps *) malloc(sizeof(MonitorProps*));
+        new = (MonitorProps *) ecalloc(1, sizeof(*new));
+        new->name = ecalloc(1, sizeof(name));
         strcpy(new->name, name);
 
-        if(monprops!=NULL)
-            new->next = monprops;
-
-        monprops = new;
-
-        p =  new;
+        wl_list_insert(&monprops, &new->link);
+        p = new;
     }
 
     /* We reuse name for the property name, because, like, why not? */
