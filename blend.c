@@ -289,7 +289,6 @@ static void setup(void);
 static void lua_setup(const Arg *arg);
 static int set_var(lua_State *L);
 static int set_keyboard_props(lua_State *L);
-static int set_mon_props(lua_State *L);
 static void sigchld(int unused);
 static void spawn(const Arg *arg);
 static void startdrag(struct wl_listener *listener, void *data);
@@ -2164,7 +2163,6 @@ static void lua_setup(const Arg *arg) {
         /* register C functions to use in lua */
         lua_register(lua, "set_var", set_var);
         lua_register(lua, "set_keyboard_props", set_keyboard_props);
-        lua_register(lua, "set_mon_props", set_mon_props);
 
         (void) luaL_dofile(lua, path);
         lua_close(lua);
@@ -2238,60 +2236,6 @@ static int set_keyboard_props(lua_State *L) {
         return 0;
     }
 
-    return 1;
-}
-
-static int set_mon_props(lua_State *L) {
-    char name[64];
-    int unset = 1;
-    MonitorProps *p, *new;
-
-    strcpy(name, lua_tostring(L, 1));
-
-    wl_list_for_each(p, &monprops, link) {
-        if(!strcmp(p->name, name)){
-            unset = 0;
-            break;
-        }
-    }
-
-    if(unset) {
-        new = (MonitorProps *) ecalloc(1, sizeof(*new));
-        new->name = ecalloc(1, sizeof(name));
-        strcpy(new->name, name);
-
-        wl_list_insert(&monprops, &new->link);
-        p = new;
-    }
-
-    /* We reuse name for the property name, because, like, why not? */
-    strcpy(name, lua_tostring(L, 2));
-
-    if(!strcmp(name, "width")) {
-        p->w = lua_tointeger(L, 3);
-        return 0;
-    }
-
-    if(!strcmp(name, "height")) {
-        p->h = lua_tointeger(L, 3);
-        return 0;
-    }
-
-    if(!strcmp(name, "x")) {
-        p->x = lua_tointeger(L, 3);
-        return 0;
-    }
-
-    if(!strcmp(name, "y")) {
-        p->y = lua_tointeger(L, 3);
-        return 0;
-    }
-
-    if(!strcmp(name, "refresh_rate")) {
-        p->rr = lua_tointeger(L, 3);
-        return 0;
-    }
-    
     return 1;
 }
 

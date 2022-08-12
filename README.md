@@ -3,10 +3,31 @@
 Right now there's:
 - inverse dynamic tiling
 - dynamic config with lua in development
+## Configuration
+
+Some configuration is done by editing `config.h` and recompiling, in the same manner as dwm. There is no way to separately restart the window manager in Wayland without restarting the entire display server, so any changes will take effect the next time blendage is executed.
+
+You can also edit `~/.config/blend/rc.lua` and set variable with the same names as in `config.h` with the function `set_var`
+
+As the author could not have been bothered to implement monitor config (he tried, look at `f1f8d631be6bdc61b19e727d7b87199971dd8fb0`), please use [wlr-randr](https://git.sr.ht/~emersion/wlr-randr) to configure monitors.
+
+## Running blendage
+
+Belndage can be run on any of the backends supported by wlroots. This means you can run it as a separate window inside either an X11 or Wayland session, as well as directly from a VT console. Depending on your distro's setup, you may need to add your user to the `video` and `input` groups before you can run blendage on a VT.
+
+When `blend` is run with no arguments, it will launch the server and begin handling any shortcuts configured in `config.h` and `~/.config/blend/rc.lua`. There is no status bar or other decoration initially; these are instead clients that can be run within the Wayland session.
+
+If you would like to run a script or command automatically at startup, you can specify the command using the `-s` option. This command will be executed as a shell command using `/bin/sh -c`.  It serves a similar function to `.xinitrc`, but differs in that the display server will not shut down when this process terminates. Instead, blend will send this process a SIGTERM at shutdown and wait for it to terminate (if it hasn't already). This makes it ideal for execing into a user service manager like [s6](https://skarnet.org/software/s6/), [anopa](https://jjacky.com/anopa/), [runit](http://smarden.org/runit/faq.html#userservices), or [`systemd --user`](https://wiki.archlinux.org/title/Systemd/User).
+
+Note: The `-s` command is run as a *child process* of blend, which means that it does not have the ability to affect the environment of blend or of any processes that it spawns. If you need to set environment variables that affect the entire blendage session, these must be set prior to running blendage.  For example, Wayland requires a valid `XDG_RUNTIME_DIR`, which is usually set up by a session manager such as `elogind` or `systemd-logind`.  If your system doesn't do this automatically, you will need to configure it prior to launching `blend`, e.g.:
+
+```
+    export XDG_RUNTIME_DIR=/tmp/xdg-runtime-$(id -u)
+    mkdir -p $XDG_RUNTIME_DIR
+    blend
+```
 
 # blendage - a Wayland compositor
-
-Join us on our [Discord server](https://discord.gg/jJxZnrGPWN)!
 
 Blendage is a compact, hackable compositor for Wayland based on [wlroots](https://gitlab.freedesktop.org/wlroots/wlroots/). It is intended to fill the same space in the Wayland world that dwm does in X11, primarily in terms of philosophy, and secondarily in terms of functionality. Like dwm, blendage is:
 
@@ -33,7 +54,7 @@ Features under consideration (possibly as patches) are:
 - Protocols made trivial by wlroots
 - Client-side decoration
 - Animations and visual effects
-- keyboard, keybinding and monitor config in lua
+- keyboard and keybinding config in lua
 - implement a socket server so as to support sway workspaces and keyboard layout
 
 
@@ -42,26 +63,6 @@ Features under consideration (possibly as patches) are:
 Blendage has three dependencies: lua, wlroots and wayland-protocols. Simply install these (and their `-devel` versions if your distro has separate development packages) and run `make`.
 
 To disable XWayland, you should also install xorg-xwayland and comment its flag in `config.mk`.
-
-## Configuration
-
-Some configuration is done by editing `config.h` and recompiling, in the same manner as dwm. There is no way to separately restart the window manager in Wayland without restarting the entire display server, so any changes will take effect the next time blendage is executed.
-
-You can also edit `~/.config/blend/rc.lua` and set variable with the same names as in `config.h` with the function `set_var`
-
-## Running blendage
-
-Belndage can be run on any of the backends supported by wlroots. This means you can run it as a separate window inside either an X11 or Wayland session, as well as directly from a VT console. Depending on your distro's setup, you may need to add your user to the `video` and `input` groups before you can run blendage on a VT.
-
-When `blend` is run with no arguments, it will launch the server and begin handling any shortcuts configured in `config.h` and `~/.config/blend/rc.lua`. There is no status bar or other decoration initially; these are instead clients that can be run within the Wayland session.
-
-If you would like to run a script or command automatically at startup, you can specify the command using the `-s` option. This command will be executed as a shell command using `/bin/sh -c`.  It serves a similar function to `.xinitrc`, but differs in that the display server will not shut down when this process terminates. Instead, blend will send this process a SIGTERM at shutdown and wait for it to terminate (if it hasn't already). This makes it ideal for execing into a user service manager like [s6](https://skarnet.org/software/s6/), [anopa](https://jjacky.com/anopa/), [runit](http://smarden.org/runit/faq.html#userservices), or [`systemd --user`](https://wiki.archlinux.org/title/Systemd/User).
-
-Note: The `-s` command is run as a *child process* of blend, which means that it does not have the ability to affect the environment of blend or of any processes that it spawns. If you need to set environment variables that affect the entire blendage session, these must be set prior to running blendage.  For example, Wayland requires a valid `XDG_RUNTIME_DIR`, which is usually set up by a session manager such as `elogind` or `systemd-logind`.  If your system doesn't do this automatically, you will need to configure it prior to launching `blend`, e.g.:
-
-    export XDG_RUNTIME_DIR=/tmp/xdg-runtime-$(id -u)
-    mkdir -p $XDG_RUNTIME_DIR
-    blend
 
 ### Status information
 
