@@ -199,12 +199,6 @@ typedef struct {
 	enum wl_output_transform rr;
 } MonitorRule;
 
-typedef struct MonitorProps {
-    struct wl_list link;
-    int w, h, x, y, rr;
-    char *name;
-} MonitorProps;
-
 typedef struct {
 	const char *id;
 	const char *title;
@@ -350,7 +344,6 @@ static struct wlr_output_layout *output_layout;
 static struct wlr_box sgeom;
 static struct wl_list mons;
 static Monitor *selmon;
-static struct wl_list monprops;
 
 /* global event handlers */
 static struct wl_listener cursor_axis = {.notify = axisnotify};
