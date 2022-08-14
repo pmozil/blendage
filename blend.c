@@ -924,7 +924,6 @@ static void createmon(struct wl_listener *listener, void *data)
 	 * monitor supports only a specific set of modes. We just pick the
 	 * monitor's preferred mode; a more sophisticated compositor would let
 	 * the user configure it. */
-    /* TODO: parse over monprops here, to check for specific monitor properties */
 	wlr_output_set_mode(wlr_output, wlr_output_preferred_mode(wlr_output));
 	wlr_output_enable_adaptive_sync(wlr_output, 1);
 
@@ -2147,8 +2146,6 @@ static void lua_setup(const Arg *arg) {
     if(access(path, F_OK)) {
         strcpy(path, "/etc/xdg/blend/rc.lua");
     }
-
-    wl_list_init(&monprops);
 
     if(!access(path, F_OK)) {
         lua = luaL_newstate();
