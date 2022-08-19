@@ -143,6 +143,11 @@ typedef struct {
 } Key;
 
 typedef struct {
+    Key *key;
+    struct wl_list link;
+} Keybind;
+
+typedef struct {
 	struct wl_list link;
 	struct wlr_input_device *device;
 
@@ -336,6 +341,7 @@ static struct wlr_xcursor_manager *cursor_mgr;
 
 static struct wlr_seat *seat;
 static struct wl_list keyboards;
+static struct wl_list keybinds;
 static unsigned int cursor_mode;
 static Client *grabc;
 static int grabcx, grabcy; /* client-relative */
@@ -699,6 +705,7 @@ static void chvt(const Arg *arg)
 
 static void cleanup(void)
 {
+    Keybind *k, *ktmp;
 #ifdef XWAYLAND
 	wlr_xwayland_destroy(xwayland);
 #endif
@@ -713,6 +720,10 @@ static void cleanup(void)
 	wlr_output_layout_destroy(output_layout);
 	wlr_seat_destroy(seat);
 	wl_display_destroy(dpy);
+    wl_list_for_each_safe(k, ktmp, &keybinds, link) {
+        free(k);
+        wl_list_remove(&k->link);
+    }
 }
 
 static void cleanupkeyboard(struct wl_listener *listener, void *data)
@@ -1295,16 +1306,16 @@ keybinding(uint32_t mods, xkb_keysym_t sym)
 	 * processing keys, rather than passing them on to the client for its own
 	 * processing.
 	 */
-	int handled = 0;
-	const Key *k;
-	for (k = keys; k < END(keys); k++) {
-		if (CLEANMASK(mods) == CLEANMASK(k->mod) &&
-				sym == k->keysym && k->func) {
-			k->func(&k->arg);
-			handled = 1;
-		}
-	}
-	return handled;
+    Keybind *k;
+    wl_list_for_each(k, &keybinds, link) {
+	    if (CLEANMASK(mods) == CLEANMASK(k->key->mod) &&
+	    		sym == k->key->keysym && k->key->func) {
+	    	k->key->func(&k->key->arg);
+            return 1;
+        }
+        
+    }
+	return 0;
 }
 
 static void keypress(struct wl_listener *listener, void *data)
@@ -2139,7 +2150,15 @@ static void lua_setup(const Arg *arg) {
     /*
      * do lua stuff
     */
-    char *path = (char*)malloc(255);
+    char path[255];
+
+    wl_list_init(&keybinds);
+    for(int i = LENGTH(keys)-1; i>=0; i-- ) {
+        Keybind *k = (Keybind *)calloc(1, sizeof(*k));
+        k->key = &keys[i];
+        wl_list_insert(&keybinds, &k->link);
+    }
+
 
     strcpy(path, getenv("HOME"));
     strcat(path, "/.config/blend/rc.lua");
@@ -2157,8 +2176,6 @@ static void lua_setup(const Arg *arg) {
         (void) luaL_dofile(lua, path);
         lua_close(lua);
     }
-    free(path);
-
 }
 
 static int set_var(lua_State *L) {
