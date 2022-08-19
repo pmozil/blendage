@@ -37,8 +37,6 @@ idle-protocol.h:
 	$(WAYLAND_SCANNER) server-header \
 		protocols/idle.xml $@
 
-config.h:
-	cp config.def.h $@
 clean:
 	rm -f blend *.o *-protocol.h
 
