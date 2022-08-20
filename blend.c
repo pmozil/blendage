@@ -2,6 +2,7 @@
  * See LICENSE file for copyright and license details.
  */
 #define _POSIX_C_SOURCE 200809L
+#include <ctype.h>
 #include <getopt.h>
 #include <libinput.h>
 #include <limits.h>
@@ -91,7 +92,7 @@ typedef struct {
 	unsigned int mod;
 	unsigned int button;
 	void (*func)(const Arg *);
-	const Arg arg;
+	Arg arg;
 } Button;
 
 typedef struct Monitor Monitor;
@@ -139,11 +140,11 @@ typedef struct {
 	uint32_t mod;
 	xkb_keysym_t keysym;
 	void (*func)(const Arg *);
-	const Arg arg;
+	Arg arg;
 } Key;
 
 typedef struct {
-    Key *key;
+    Key key;
     struct wl_list link;
 } Keybind;
 
@@ -226,6 +227,7 @@ static void axisnotify(struct wl_listener *listener, void *data);
 static void buttonpress(struct wl_listener *listener, void *data);
 static void chvt(const Arg *arg);
 static void cleanup(void);
+static void cleanuplua(void);
 static void cleanupkeyboard(struct wl_listener *listener, void *data);
 static void cleanupmon(struct wl_listener *listener, void *data);
 static void closemon(Monitor *m);
@@ -288,6 +290,7 @@ static void setup(void);
 static void lua_setup(const Arg *arg);
 static int set_var(lua_State *L);
 static int set_keyboard_props(lua_State *L);
+static int setmodkey(lua_State *L);
 static void sigchld(int unused);
 static void spawn(const Arg *arg);
 static void startdrag(struct wl_listener *listener, void *data);
@@ -390,6 +393,8 @@ static Atom netatom[NetLast];
 
 /* configuration, allows nested code to access above variables */
 #include "config.h"
+
+static uint32_t cur_modkey = MODKEY;
 
 /* attempt to encapsulate suck into one file */
 #include "client.h"
@@ -703,9 +708,9 @@ static void chvt(const Arg *arg)
 	wlr_session_change_vt(wlr_backend_get_session(backend), arg->ui);
 }
 
+
 static void cleanup(void)
 {
-    Keybind *k, *ktmp;
 #ifdef XWAYLAND
 	wlr_xwayland_destroy(xwayland);
 #endif
@@ -720,10 +725,16 @@ static void cleanup(void)
 	wlr_output_layout_destroy(output_layout);
 	wlr_seat_destroy(seat);
 	wl_display_destroy(dpy);
+    cleanuplua();
+}
+
+static void cleanuplua(void) {
+    Keybind *k, *ktmp;
     wl_list_for_each_safe(k, ktmp, &keybinds, link) {
         free(k);
         wl_list_remove(&k->link);
     }
+    lua_close(lua);
 }
 
 static void cleanupkeyboard(struct wl_listener *listener, void *data)
@@ -1308,9 +1319,9 @@ keybinding(uint32_t mods, xkb_keysym_t sym)
 	 */
     Keybind *k;
     wl_list_for_each(k, &keybinds, link) {
-	    if (CLEANMASK(mods) == CLEANMASK(k->key->mod) &&
-	    		sym == k->key->keysym && k->key->func) {
-	    	k->key->func(&k->key->arg);
+	    if (CLEANMASK(mods) == CLEANMASK(k->key.mod) &&
+	    		sym == k->key.keysym && k->key.func) {
+	    	k->key.func(&k->key.arg);
             return 1;
         }
         
@@ -2155,7 +2166,10 @@ static void lua_setup(const Arg *arg) {
     wl_list_init(&keybinds);
     for(int i = LENGTH(keys)-1; i>=0; i-- ) {
         Keybind *k = (Keybind *)calloc(1, sizeof(*k));
-        k->key = &keys[i];
+        k->key.mod = keys[i].mod;
+        k->key.keysym = keys[i].keysym;
+        k->key.func = keys[i].func;
+        k->key.arg = keys[i].arg;
         wl_list_insert(&keybinds, &k->link);
     }
 
@@ -2172,9 +2186,8 @@ static void lua_setup(const Arg *arg) {
         /* register C functions to use in lua */
         lua_register(lua, "set_var", set_var);
         lua_register(lua, "set_keyboard_props", set_keyboard_props);
-
+        lua_register(lua, "setmodkey", setmodkey);
         (void) luaL_dofile(lua, path);
-        lua_close(lua);
     }
 }
 
@@ -2244,6 +2257,41 @@ static int set_keyboard_props(lua_State *L) {
     }
 
     return 1;
+}
+
+static int setmodkey(lua_State *L) {
+    char mod[16];
+    uint32_t prevmod = cur_modkey;
+    Keybind *k;
+
+    strcpy(mod, lua_tostring(L, 1));
+
+    for(int i = 0; mod[i]!='\0' && i<16; i++) {
+          mod[i] = tolower(mod[i]);
+    }
+
+    if(!strcmp(mod, "mod4")||!strcmp(mod, "win")||!strcmp(mod, "logo")) {
+        cur_modkey = WLR_MODIFIER_LOGO;
+    }
+
+    if(!strcmp(mod, "mod1")||!strcmp(mod, "alt")) {
+        cur_modkey = WLR_MODIFIER_ALT;
+    }
+
+    if(!strcmp(mod, "control")||!strcmp(mod, "ctrl")) {
+        cur_modkey = WLR_MODIFIER_CTRL;
+    }
+
+    if(!strcmp(mod, "shift")) {
+        cur_modkey = WLR_MODIFIER_SHIFT;
+    }
+
+    wl_list_for_each(k, &keybinds, link) {
+        if(k->key.mod == prevmod)
+            k->key.mod = cur_modkey;
+    }
+
+    return 0;
 }
 
 static void sigchld(int unused)
