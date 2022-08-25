@@ -86,6 +86,7 @@ typedef union {
 	unsigned int ui;
 	float f;
 	const void *v;
+    char *fn;
 } Arg;
 
 typedef struct {
@@ -245,6 +246,7 @@ static void destroylayersurfacenotify(struct wl_listener *listener, void *data);
 static void destroynotify(struct wl_listener *listener, void *data);
 static Monitor *dirtomon(enum wlr_direction dir);
 static void dragicondestroy(struct wl_listener *listener, void *data);
+static void dolua(const Arg *arg);
 static void focusclient(Client *c, int lift);
 static void focusmon(const Arg *arg);
 static void focusstack(const Arg *arg);
@@ -291,6 +293,7 @@ static void lua_setup(const Arg *arg);
 static int set_var(lua_State *L);
 static int set_keyboard_props(lua_State *L);
 static int setmodkey(lua_State *L);
+static int set_keybind(lua_State *L);
 static void sigchld(int unused);
 static void spawn(const Arg *arg);
 static void startdrag(struct wl_listener *listener, void *data);
@@ -731,8 +734,8 @@ static void cleanup(void)
 static void cleanuplua(void) {
     Keybind *k, *ktmp;
     wl_list_for_each_safe(k, ktmp, &keybinds, link) {
-        free(k);
         wl_list_remove(&k->link);
+        free(k);
     }
     lua_close(lua);
 }
@@ -1144,6 +1147,11 @@ static void dragicondestroy(struct wl_listener *listener, void *data)
 	// Focus enter isn't sent during drag, so refocus the focused node.
 	focusclient(selclient(), 1);
 	motionnotify(0);
+}
+
+static void dolua(const Arg *arg) {
+   lua_getglobal(lua, arg->fn);
+   lua_call(lua, 0, 0);
 }
 
 static void focusclient(Client *c, int lift)
@@ -1981,6 +1989,7 @@ static void setup(void)
 	 * clients from the Unix socket, manging Wayland globals, and so on. */
     int fd[2];
 
+    wl_list_init(&keybinds);
     lua_setup(0);
 
 	dpy = wl_display_create();
@@ -2163,7 +2172,6 @@ static void lua_setup(const Arg *arg) {
     */
     char path[255];
 
-    wl_list_init(&keybinds);
     for(int i = LENGTH(keys)-1; i>=0; i-- ) {
         Keybind *k = (Keybind *)calloc(1, sizeof(*k));
         k->key.mod = keys[i].mod;
@@ -2187,6 +2195,7 @@ static void lua_setup(const Arg *arg) {
         lua_register(lua, "set_var", set_var);
         lua_register(lua, "set_keyboard_props", set_keyboard_props);
         lua_register(lua, "setmodkey", setmodkey);
+        lua_register(lua, "set_keybind", set_keybind);
         (void) luaL_dofile(lua, path);
     }
 }
@@ -2232,6 +2241,61 @@ static int set_var(lua_State *L) {
 
     else
         return 0;
+}
+
+static int set_keybind(lua_State *L) {
+    Keybind *kb, *kbnew;
+    uint32_t mod = WLR_MODIFIER_LOGO;
+    xkb_keysym_t sym;
+    char mod_str[32], key[1], fn[255], *ch;
+
+    for(int i = 0; mod_str[i]!='\0' && i < 32; i++) {
+        mod_str[i] = tolower(mod_str[i]);
+    }
+
+    strcpy(mod_str, lua_tostring(L, 1));
+    strcpy(key, lua_tostring(L, 2));
+
+    if((int)((strstr(mod_str, "mod4")!=0)||
+            (strstr(mod_str, "logo")!=0)||
+            (strstr(mod_str, "win")!=0)))
+        mod ^= WLR_MODIFIER_LOGO;
+
+    if((int)((strstr(mod_str, "mod1")!=0)||
+            (strstr(mod_str, "alt")!=0)))
+        mod |= WLR_MODIFIER_ALT;
+
+    if((int)((strstr(mod_str, "ctrl")!=0)||
+            (strstr(mod_str, "control")!=0)))
+        mod |= WLR_MODIFIER_CTRL;
+
+    if((int)((strstr(mod_str, "shift")!=0)))
+        mod |= WLR_MODIFIER_SHIFT;
+
+    strcpy(fn, lua_tostring(L, 3));
+
+    ch = (char *) calloc(1, strlen(fn));
+
+    strcpy(ch, fn);
+    
+    wl_list_for_each(kb, &keybinds, link) {
+	    if (CLEANMASK(mod) == CLEANMASK(kb->key.mod) &&
+	    		key[0] == (char) kb->key.keysym && kb->key.func) {
+            kb->key.func = &dolua;
+            kb->key.arg = (Arg) { .fn = ch };
+            return 0;
+        }
+    }
+
+    kbnew = (Keybind *) malloc(sizeof(*kb));
+    kbnew->key.mod = mod;
+    kbnew->key.func = &dolua;
+    kbnew->key.keysym = (xkb_keysym_t) key[0];
+    kbnew->key.arg = (Arg) { .fn = ch };
+
+    wl_list_insert(&keybinds, &kbnew->link);
+
+    return 0;
 }
 
 static int set_keyboard_props(lua_State *L) {
