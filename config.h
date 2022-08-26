@@ -86,9 +86,9 @@ static char *wallcmd[] = {"~/.local/bin/scripts/select-background.sh", NULL};
 static Key keys[] = {
 	/* Note that Shift changes certain key codes: c -> C, 2 -> at, etc. */
 	/* modifier                  key                 function        argument */
-	{ MODKEY|0,                    ( xkb_keysym_t ) 'r',          spawn,          {.v = menucmd} },
-	{ MODKEY|0,                    ( xkb_keysym_t ) 't',          spawn,          {.v = termcmd} },
-	{ MODKEY|0,                    ( xkb_keysym_t ) 'b',          spawn,          {.v = browsercmd} },
+	{ MODKEY,                    ( xkb_keysym_t ) 'r',          spawn,          {.v = menucmd} },
+	{ MODKEY,                    ( xkb_keysym_t ) 't',          spawn,          {.v = termcmd} },
+	{ MODKEY,                    ( xkb_keysym_t ) 'b',          spawn,          {.v = browsercmd} },
 	{ MODKEY|WLR_MODIFIER_SHIFT, ( xkb_keysym_t ) 'W',          spawn,          {.v = wallcmd} },
 	{ MODKEY,                    ( xkb_keysym_t ) 'j',          focusstack,     {.i = +1} },
 	{ MODKEY,                    ( xkb_keysym_t ) 'k',          focusstack,     {.i = -1} },

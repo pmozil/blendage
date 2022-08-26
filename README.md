@@ -3,6 +3,7 @@
 Right now there's:
 - inverse dynamic tiling
 - dynamic config with lua in development
+- keyboard and keybinding config in lua
 ## Configuration
 
 Some configuration is done by editing `config.h` and recompiling, in the same manner as dwm. There is no way to separately restart the window manager in Wayland without restarting the entire display server, so any changes will take effect the next time blendage is executed.
@@ -54,7 +55,6 @@ Features under consideration (possibly as patches) are:
 - Protocols made trivial by wlroots
 - Client-side decoration
 - Animations and visual effects
-- keyboard and keybinding config in lua
 - implement a socket server so as to support sway workspaces and keyboard layout
 
 

@@ -2245,38 +2245,47 @@ static int set_var(lua_State *L) {
 
 static int set_keybind(lua_State *L) {
     Keybind *kb, *kbnew;
-    uint32_t mod = WLR_MODIFIER_LOGO;
+    uint32_t mod = 0;
     xkb_keysym_t sym;
     char mod_str[32], key[1], fn[255], *ch;
+
+    strcpy(mod_str, lua_tostring(L, 1));
 
     for(int i = 0; mod_str[i]!='\0' && i < 32; i++) {
         mod_str[i] = tolower(mod_str[i]);
     }
 
-    strcpy(mod_str, lua_tostring(L, 1));
-    strcpy(key, lua_tostring(L, 2));
+    if(strstr(mod_str, "mod4"))
+        mod = mod | WLR_MODIFIER_LOGO;
 
-    if((int)((strstr(mod_str, "mod4")!=0)||
-            (strstr(mod_str, "logo")!=0)||
-            (strstr(mod_str, "win")!=0)))
-        mod ^= WLR_MODIFIER_LOGO;
+    if(strstr(mod_str, "logo"))
+        mod = mod | WLR_MODIFIER_LOGO;
 
-    if((int)((strstr(mod_str, "mod1")!=0)||
-            (strstr(mod_str, "alt")!=0)))
-        mod |= WLR_MODIFIER_ALT;
+    if(strstr(mod_str, "win"))
+        mod = mod | WLR_MODIFIER_LOGO;
 
-    if((int)((strstr(mod_str, "ctrl")!=0)||
-            (strstr(mod_str, "control")!=0)))
-        mod |= WLR_MODIFIER_CTRL;
+    if(strstr(mod_str, "mod1"))
+        mod = mod | WLR_MODIFIER_ALT;
 
-    if((int)((strstr(mod_str, "shift")!=0)))
-        mod |= WLR_MODIFIER_SHIFT;
+    if(strstr(mod_str, "alt"))
+        mod = mod | WLR_MODIFIER_ALT;
+
+    if(strstr(mod_str, "ctrl"))
+        mod = mod | WLR_MODIFIER_CTRL;
+
+    if(strstr(mod_str, "control"))
+        mod = mod | WLR_MODIFIER_CTRL;
+
+    if(strstr(mod_str, "shift"))
+        mod = mod | WLR_MODIFIER_SHIFT;
 
     strcpy(fn, lua_tostring(L, 3));
 
     ch = (char *) calloc(1, strlen(fn));
 
     strcpy(ch, fn);
+
+    strcpy(key, lua_tostring(L, 2));
     
     wl_list_for_each(kb, &keybinds, link) {
 	    if (CLEANMASK(mod) == CLEANMASK(kb->key.mod) &&
