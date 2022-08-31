@@ -250,9 +250,11 @@ static void dolua(const Arg *arg);
 static void focusclient(Client *c, int lift);
 static void focusmon(const Arg *arg);
 static void focusstack(const Arg *arg);
+static int focusstack_lua(lua_State *L);
 static Client *focustop(Monitor *m);
 static void fullscreennotify(struct wl_listener *listener, void *data);
 static void incnmaster(const Arg *arg);
+static int incnmaster_lua(lua_State *L);
 static void inputdevice(struct wl_listener *listener, void *data);
 static int keybinding(uint32_t mods, xkb_keysym_t sym);
 static void keypress(struct wl_listener *listener, void *data);
@@ -278,6 +280,7 @@ static void requeststartdrag(struct wl_listener *listener, void *data);
 static void resize(Client *c, int x, int y, int w, int h, int interact);
 static void resizeclient(const Arg *arg);
 static void restart(const Arg *arg);
+static int restart_lua(lua_State *L);
 static void run(char *startup_cmd);
 static Client *selclient(void);
 static void setcursor(struct wl_listener *listener, void *data);
@@ -289,7 +292,7 @@ static void setmon(Client *c, Monitor *m, unsigned int newtags);
 static void setpsel(struct wl_listener *listener, void *data);
 static void setsel(struct wl_listener *listener, void *data);
 static void setup(void);
-static void lua_setup(const Arg *arg);
+static void lua_setup(void);
 static int set_var(lua_State *L);
 static int set_keyboard_props(lua_State *L);
 static int setmodkey(lua_State *L);
@@ -313,12 +316,14 @@ static void updatemons(struct wl_listener *listener, void *data);
 static void updatetitle(struct wl_listener *listener, void *data);
 static void urgent(struct wl_listener *listener, void *data);
 static void view(const Arg *arg);
+static int view_lua(lua_State *L);
 static void virtualkeyboard(struct wl_listener *listener, void *data);
 static Monitor *xytomon(double x, double y);
 static struct wlr_scene_node *xytonode(double x, double y, struct wlr_surface **psurface,
 		Client **pc, LayerSurface **pl, double *nx, double *ny);
 static void neighbours(double x, double y, Client **clist);
 static void zoom(const Arg *arg);
+static int zoom_lua(lua_State *L);
 
 /* variables */
 static const char broken[] = "broken";
@@ -1259,6 +1264,15 @@ static void focusstack(const Arg *arg)
 	focusclient(c, 1);
 }
 
+static int focusstack_lua(lua_State *L) {
+    int i = lua_tointeger(L, 1);
+
+    const Arg a = { .i = i };
+
+    focusstack(&a);
+    return 0;
+}
+
 Client *
 focustop(Monitor *m)
 {
@@ -1286,6 +1300,15 @@ static void incnmaster(const Arg *arg)
 {
 	selmon->nmaster = MAX(selmon->nmaster + arg->i, 0);
 	arrange(selmon);
+}
+
+static int incnmaster_lua(lua_State *L) {
+    int i = lua_tointeger(L, 1);
+
+    const Arg a = { .i = i };
+
+    incnmaster(&a);
+    return 0;
 }
 
 static void inputdevice(struct wl_listener *listener, void *data)
@@ -1394,6 +1417,12 @@ static void killclient(const Arg *arg)
     focustop(selmon);
 	if (sel)
 		client_send_close(sel);
+}
+
+static int killclient_lua(lua_State *L) {
+    killclient(0);
+    
+    return 0;
 }
 
 static void maplayersurfacenotify(struct wl_listener *listener, void *data)
@@ -1806,7 +1835,14 @@ static void resizeclient(const Arg *arg)
 }
 
 static void restart(const Arg *arg) {
-    setup();
+    cleanuplua();
+    lua_setup();
+}
+
+static int restart_lua(lua_State *L) {
+    restart(0);
+
+    return 0;
 }
 
 static void run(char *startup_cmd)
@@ -1926,6 +1962,15 @@ static void setlayout(const Arg *arg)
 	printstatus();
 }
 
+static int setlayout_lua(lua_State *L) {
+    int i = lua_tointeger(L, 1);
+
+    const Arg a = { .i = i };
+
+    setlayout(&a);
+    return 0;
+}
+
 /* arg > 1.0 will set mfact absolutely */
 static void setmfact(const Arg *arg)
 {
@@ -1938,6 +1983,15 @@ static void setmfact(const Arg *arg)
 		return;
 	selmon->mfact = f;
 	arrange(selmon);
+}
+
+static int setmfact_lua(lua_State *L) {
+    float f = lua_tonumber(L, 1);
+
+    const Arg a = { .f = f };
+
+    setmfact(&a);
+    return 0;
 }
 
 static void setmon(Client *c, Monitor *m, unsigned int newtags)
@@ -1990,7 +2044,7 @@ static void setup(void)
     int fd[2];
 
     wl_list_init(&keybinds);
-    lua_setup(0);
+    lua_setup();
 
 	dpy = wl_display_create();
 
@@ -2166,11 +2220,12 @@ static void setup(void)
 
 }
 
-static void lua_setup(const Arg *arg) {
+static void lua_setup(void) {
     /*
      * do lua stuff
     */
     char path[255];
+    Keybind *c, *tmp;
 
     for(int i = LENGTH(keys)-1; i>=0; i-- ) {
         Keybind *k = (Keybind *)calloc(1, sizeof(*k));
@@ -2196,6 +2251,15 @@ static void lua_setup(const Arg *arg) {
         lua_register(lua, "set_keyboard_props", set_keyboard_props);
         lua_register(lua, "setmodkey", setmodkey);
         lua_register(lua, "set_keybind", set_keybind);
+        lua_register(lua, "restart", restart_lua);
+        lua_register(lua, "view", view_lua);
+        lua_register(lua, "focusstack", focusstack_lua);
+        lua_register(lua, "incnmaster", incnmaster_lua);
+        lua_register(lua, "zoom", zoom_lua);
+        lua_register(lua, "setmfact", setmfact_lua);
+        lua_register(lua, "killclient", killclient_lua);
+        lua_register(lua, "killclient", killclient_lua);
+        lua_register(lua, "focusstack", focusstack_lua);
         (void) luaL_dofile(lua, path);
     }
 }
@@ -2245,9 +2309,9 @@ static int set_var(lua_State *L) {
 
 static int set_keybind(lua_State *L) {
     Keybind *kb, *kbnew;
-    uint32_t mod = 0;
+    uint32_t mod = 0, key;
     xkb_keysym_t sym;
-    char mod_str[32], key[1], fn[255], *ch;
+    char mod_str[32], fn[255], *ch;
 
     strcpy(mod_str, lua_tostring(L, 1));
 
@@ -2285,11 +2349,11 @@ static int set_keybind(lua_State *L) {
 
     strcpy(ch, fn);
 
-    strcpy(key, lua_tostring(L, 2));
+    key = lua_tointeger(L, 2);
     
     wl_list_for_each(kb, &keybinds, link) {
 	    if (CLEANMASK(mod) == CLEANMASK(kb->key.mod) &&
-	    		key[0] == (char) kb->key.keysym && kb->key.func) {
+	    		key == (uint32_t) kb->key.keysym && kb->key.func) {
             kb->key.func = &dolua;
             kb->key.arg = (Arg) { .fn = ch };
             return 0;
@@ -2299,7 +2363,7 @@ static int set_keybind(lua_State *L) {
     kbnew = (Keybind *) malloc(sizeof(*kb));
     kbnew->key.mod = mod;
     kbnew->key.func = &dolua;
-    kbnew->key.keysym = (xkb_keysym_t) key[0];
+    kbnew->key.keysym = (xkb_keysym_t) key;
     kbnew->key.arg = (Arg) { .fn = ch };
 
     wl_list_insert(&keybinds, &kbnew->link);
@@ -2534,11 +2598,23 @@ static void togglefloating(const Arg *arg)
 		setfloating(sel, !sel->isfloating);
 }
 
+static int togglefloating_lua(lua_State *L) {
+    togglefloating(0);
+
+    return 0;
+}
+
 static void togglefullscreen(const Arg *arg)
 {
 	Client *sel = selclient();
 	if (sel)
 		setfullscreen(sel, !sel->isfullscreen);
+}
+
+static int togglefullscreen_lua(lua_State *L) {
+    togglefullscreen(0);
+
+    return 0;
 }
 
 static void toggletag(const Arg *arg)
@@ -2685,6 +2761,12 @@ static void view(const Arg *arg)
 	printstatus();
 }
 
+static int view_lua(lua_State *L) {
+    view(0);
+
+    return 0;
+}
+
 static void virtualkeyboard(struct wl_listener *listener, void *data)
 {
 	struct wlr_virtual_keyboard_v1 *keyboard = data;
@@ -2773,6 +2855,12 @@ static void zoom(const Arg *arg)
 		}
 
     swapclient(sel, c);
+}
+
+static int zoom_lua(lua_State *L) {
+    zoom(0);
+
+    return 0;
 }
 
 #ifdef XWAYLAND
